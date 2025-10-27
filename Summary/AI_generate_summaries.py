@@ -1,6 +1,6 @@
-"""Unified French Summary Generation (Gemini or OpenAI)
+"""Unified Summary and Keywords Generation (Gemini or OpenAI)
 
-Generates French summaries for all .txt files in TXT/ and writes them to Summaries_FR_TXT/.
+Generates summaries with keywords for all .txt files in TXT/ and writes them to Summaries_TXT/.
 User selects provider interactively:
   1) OpenAI Responses API (model: gpt-5-mini)
   2) Google Gemini (model: gemini-2.5-flash)
@@ -209,7 +209,7 @@ def main():
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         input_dir = os.path.join(script_dir, 'TXT')
-        output_dir = os.path.join(script_dir, 'Summaries_FR_TXT')
+        output_dir = os.path.join(script_dir, 'Summaries_TXT')
         logging.info("Starting summary generation pipeline")
         logging.info(f"Input: {input_dir}")
         logging.info(f"Output: {output_dir}")
