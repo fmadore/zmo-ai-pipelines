@@ -178,9 +178,11 @@ class AudioTranscriber:
         Returns:
             list: List of audio file paths
         """
-        audio_path = Path(audio_folder)
+        # Make path relative to script location
+        script_dir = Path(__file__).parent
+        audio_path = script_dir / audio_folder
         if not audio_path.exists():
-            print(f"Audio folder '{audio_folder}' not found!")
+            print(f"Audio folder '{audio_path}' not found!")
             return []
         
         audio_files = []
@@ -271,8 +273,9 @@ class AudioTranscriber:
             audio_file_path (Path): Original audio file path
             output_folder (str): Output folder for transcriptions
         """
-        # Create output folder if it doesn't exist
-        output_path = Path(output_folder)
+        # Create output folder if it doesn't exist (relative to script location)
+        script_dir = Path(__file__).parent
+        output_path = script_dir / output_folder
         output_path.mkdir(exist_ok=True)
         
         # Create output filename
@@ -322,8 +325,9 @@ class AudioTranscriber:
                 # No need to split
                 return [audio_file_path]
 
-            # Prepare temp directory
-            parent_dir = Path(temp_root) / audio_file_path.stem
+            # Prepare temp directory (relative to script location)
+            script_dir = Path(__file__).parent
+            parent_dir = script_dir / temp_root / audio_file_path.stem
             parent_dir.mkdir(parents=True, exist_ok=True)
 
             segments = []
@@ -376,8 +380,9 @@ class AudioTranscriber:
                     segment_path.unlink()
                     print(f"Cleaned up segment: {segment_path.name}")
             
-            # Remove the segment directory if it's empty
-            segment_dir = Path(temp_root) / original_audio_file.stem
+            # Remove the segment directory if it's empty (relative to script location)
+            script_dir = Path(__file__).parent
+            segment_dir = script_dir / temp_root / original_audio_file.stem
             if segment_dir.exists() and segment_dir.is_dir():
                 try:
                     segment_dir.rmdir()  # Only removes if empty
@@ -387,7 +392,7 @@ class AudioTranscriber:
                     pass
             
             # Clean up root temp directory if it's empty
-            temp_root_path = Path(temp_root)
+            temp_root_path = script_dir / temp_root
             if temp_root_path.exists() and temp_root_path.is_dir():
                 try:
                     temp_root_path.rmdir()  # Only removes if empty
@@ -486,9 +491,11 @@ class AudioTranscriber:
         Returns:
             list: List of tuples (number, description, filepath)
         """
-        prompts_path = Path(prompts_folder)
+        # Make path relative to script location
+        script_dir = Path(__file__).parent
+        prompts_path = script_dir / prompts_folder
         if not prompts_path.exists():
-            print(f"Warning: Prompts folder '{prompts_folder}' not found.")
+            print(f"Warning: Prompts folder '{prompts_path}' not found.")
             return []
         
         prompt_files = []
