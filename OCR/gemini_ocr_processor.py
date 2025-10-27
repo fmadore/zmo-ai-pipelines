@@ -52,7 +52,7 @@ logging.basicConfig(
 
 class GeminiPDFProcessor:
     """
-    A high-precision OCR system using Google's Gemini model with native PDF processing.
+    A high-precision universal OCR system using Google's Gemini model with native PDF processing.
     
     This class implements a page-by-page OCR pipeline that:
     1. Extracts individual pages from PDF documents
@@ -61,9 +61,12 @@ class GeminiPDFProcessor:
     4. Applies sophisticated text extraction and formatting rules
     5. Handles uncertainty and quality control per page
     
-    The system is designed for academic research and archival purposes, with emphasis on:
+    The system is designed for academic research and archival purposes, supporting:
+    - All languages and writing systems (Latin, Arabic, Chinese, Cyrillic, etc.)
+    - All document types (newspapers, manuscripts, letters, forms, reports, books)
+    - Mixed printed and handwritten text
     - Maintaining precise reading order and layout relationships
-    - Preserving French typography and formatting
+    - Preserving language-specific typography and formatting
     - Handling document structure (columns, zones, captions)
     - Processing pages individually for better control and error recovery
     """
@@ -132,9 +135,10 @@ class GeminiPDFProcessor:
     
     def _get_system_instruction(self):
         """
-        Get the specialized system instructions for French newspaper OCR.
+        Get the specialized system instructions for universal document OCR.
         
         Loads the system prompt from the ocr_system_prompt.md file for better maintainability.
+        Supports all languages, document types, and mixed printed/handwritten content.
         
         Returns:
             str: Detailed system instruction for OCR processing
@@ -550,10 +554,15 @@ def main():
     
     Handles user interaction, model selection, and batch processing of PDFs.
     Each PDF is processed page-by-page for better control and error recovery.
+    
+    Supports:
+    - All languages and writing systems
+    - All document types
+    - Mixed printed and handwritten text
     """
-    print("\n🚀 Starting Page-by-Page PDF OCR Process")
+    print("\n🚀 Starting Universal Page-by-Page PDF OCR Process")
     print("="*50)
-    print("📖 This script processes PDFs page-by-page without image conversion")
+    print("📖 Supports all languages, document types, and handwritten text")
     print("="*50)
     
     # Load environment variables from .env file
