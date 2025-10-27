@@ -27,7 +27,7 @@ Transcribe handwritten documents with high precision. Specialized support for:
 - Multilingual handwritten documents
 
 ### 📊 Text Summarization
-Generate concise French summaries from long text documents automatically.
+Generate concise summaries with keywords from long text documents automatically. Choose between OpenAI or Google Gemini models. Summaries are generated in the same language as the input text.
 
 ---
 
@@ -39,12 +39,19 @@ You need Python 3.8 or newer installed on your computer.
 - **Windows:** Download from [python.org](https://www.python.org/downloads/)
 - **Mac/Linux:** Python is usually pre-installed
 
-### Step 2: Get a Gemini API Key
+### Step 2: Get API Keys
 
+**For Gemini (required for Audio, OCR, and HTR):**
 1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
 2. Sign in with your Google account
 3. Click "Create API Key"
 4. Copy your API key (you'll need it in the next step)
+
+**For OpenAI (optional, for Text Summarization only):**
+1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Sign in or create an account
+3. Create a new API key
+4. Copy your API key
 
 ### Step 3: Set Up Your Environment
 
@@ -57,7 +64,8 @@ You need Python 3.8 or newer installed on your computer.
 4. **Create a `.env` file** by copying the example:
    - Rename `.env.example` to `.env`
    - Open `.env` in a text editor
-   - Replace `your_gemini_api_key_here` with your actual API key
+   - Replace `your_gemini_api_key_here` with your actual Gemini API key
+   - (Optional) Replace `your_openai_api_key_here` with your OpenAI API key if you want to use OpenAI for summaries
 
 ### Step 4: (Optional) Install FFmpeg for Audio Splitting
 
@@ -147,9 +155,13 @@ After installation, update the paths in your `.env` file if needed.
 4. Choose your AI provider:
    - **1** for OpenAI (requires OpenAI API key)
    - **2** for Google Gemini (uses your Gemini API key)
-5. Find your summaries in the `Summary/Summaries_FR_TXT/` folder
+5. Find your summaries with keywords in the `Summary/Summaries_TXT/` folder
 
-**Note:** Summaries are generated in French.
+**Features:**
+- Generates concise summaries in the same language as the input text
+- Automatically extracts 5-10 relevant keywords for each document
+- Works with any language
+- Choose between OpenAI GPT or Google Gemini models
 
 ---
 
@@ -172,7 +184,7 @@ zmo-ai-pipelines/
 │   └── gemini_htr_processor.py
 ├── Summary/
 │   ├── TXT/                ← Put text files here
-│   ├── Summaries_FR_TXT/   ← Summaries appear here
+│   ├── Summaries_TXT/      ← Summaries with keywords appear here
 │   └── AI_generate_summaries.py
 ├── .env                    ← Your API key goes here
 └── requirements.txt        (List of required packages)
