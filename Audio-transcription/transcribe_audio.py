@@ -678,7 +678,7 @@ def main():
     except ValueError as e:
         print(f"Configuration Error: {e}")
         print("\nTo use this script, you need to set your Gemini API key:")
-        print("1. Get your API key from: https://makersuite.google.com/app/apikey")
+        print("1. Get your API key from: https://aistudio.google.com/app/api-keys")
         print("2. Edit the .env file in this directory")
         print("3. Replace 'your-api-key-here' with your actual API key")
         print("4. Save the file and run this script again")
