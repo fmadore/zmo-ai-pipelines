@@ -1,2 +1,4 @@
 .env
+OCR/log/
+OCR/OCR_Results/
 OCR/PDF/
