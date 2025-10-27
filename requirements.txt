@@ -1,7 +1,14 @@
-google-genai
-python-dotenv
-PyPDF2
-openai
-tqdm
-pydub
-audioop-lts
+# Core AI Models
+google-genai          # Google Gemini API (Audio, OCR, HTR)
+openai                # OpenAI API (optional, for summaries)
+
+# Document Processing
+PyPDF2                # PDF page extraction (OCR, HTR)
+
+# Audio Processing
+pydub                 # Audio file manipulation and splitting
+audioop-lts           # Audio operations for Python 3.13+ (required by pydub)
+
+# Utilities
+python-dotenv         # Environment variable management
+tqdm                  # Progress bars for batch processing
