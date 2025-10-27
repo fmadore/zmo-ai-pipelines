@@ -1,6 +1,7 @@
 .env
 Audio-transcription/Audio/
 Audio-transcription/temp_segments/
+Audio-transcription/Transcriptions/
 HTR/log/
 HTR/OCR_Results/
 HTR/PDF/
