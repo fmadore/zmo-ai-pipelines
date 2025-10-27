@@ -4,3 +4,4 @@ PyPDF2
 openai
 tqdm
 pydub
+audioop-lts
