@@ -198,21 +198,21 @@ def process_txt_files(provider: str, client, input_dir: str, output_dir: str):
 # ------------------------------------------------------------------
 # Spreadsheet Processing
 # ------------------------------------------------------------------
-def extract_keywords_from_summary(summary_text: str) -> str:
+def extract_keywords_from_summary(summary_text: str) -> tuple[str, str]:
     """
-    Extract keywords from the summary text and format them as pipe-separated values.
+    Extract keywords from the summary text and return cleaned summary + keywords.
     
-    The summary typically includes keywords at the end. This function extracts them
-    and formats them as: keyword1 | keyword2 | keyword3
+    The summary typically includes keywords at the end. This function extracts them,
+    removes them from the summary, and formats them as pipe-separated values.
     
     Args:
         summary_text (str): The full summary text with keywords
         
     Returns:
-        str: Pipe-separated keywords, or empty string if none found
+        tuple: (cleaned_summary, pipe_separated_keywords)
     """
     if not summary_text:
-        return ""
+        return ("", "")
     
     # Look for common keyword indicators
     keyword_indicators = [
@@ -223,11 +223,18 @@ def extract_keywords_from_summary(summary_text: str) -> str:
         "الكلمات المفتاحية:",
     ]
     
+    cleaned_summary = summary_text
+    keywords = ""
+    
     for indicator in keyword_indicators:
         if indicator in summary_text:
-            # Find the keyword section
+            # Split at the keyword indicator
             parts = summary_text.split(indicator)
             if len(parts) > 1:
+                # Everything before the indicator is the summary
+                cleaned_summary = parts[0].strip()
+                
+                # Everything after is the keywords
                 keyword_section = parts[-1].strip()
                 
                 # Extract keywords (they might be comma-separated or newline-separated)
@@ -242,10 +249,11 @@ def extract_keywords_from_summary(summary_text: str) -> str:
                 keywords = keywords.strip(' |')
                 # Remove bullet points, numbers, dashes
                 keywords = re.sub(r'[•\-\d\.]+\s*', '', keywords)
+                keywords = keywords.strip()
                 
-                return keywords.strip()
+                break
     
-    return ""
+    return (cleaned_summary, keywords)
 
 def find_excel_file(directory: Path) -> Optional[Path]:
     """
@@ -354,10 +362,10 @@ def process_with_spreadsheet(provider: str, client, excel_path: Path) -> None:
                     summary = generate_summary_openai(client, ocr_text)
                 
                 if summary:
-                    # Extract keywords from the summary
-                    keywords = extract_keywords_from_summary(summary)
+                    # Extract keywords from the summary and get cleaned summary
+                    cleaned_summary, keywords = extract_keywords_from_summary(summary)
                     
-                    df.at[idx, 'Summary'] = summary
+                    df.at[idx, 'Summary'] = cleaned_summary
                     df.at[idx, 'Keywords'] = keywords
                     stats['processed'] += 1
                     print(f"✅ Row {row_num}: Successfully generated summary")
