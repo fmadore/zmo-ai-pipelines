@@ -32,12 +32,13 @@ import os
 import time
 import logging
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader, PdfWriter
 import io
+import pandas as pd
 
 # Set up logging configuration for tracking OCR operations and errors
 script_dir = Path(__file__).parent
@@ -548,6 +549,243 @@ class GeminiPDFProcessor:
             print(f"\n❌ Error processing PDF {pdf_path}: {e}")
             logging.error(f"Error processing PDF {pdf_path}: {e}", exc_info=True)
 
+    def process_pdf_to_text(self, pdf_path: Path) -> Optional[str]:
+        """
+        Process a PDF file page-by-page and return the OCR text as a string.
+        
+        This method is similar to process_pdf but returns the text instead of saving to file.
+        Useful for batch processing with spreadsheets.
+        
+        Args:
+            pdf_path (Path): Path to the PDF file to process
+            
+        Returns:
+            Optional[str]: The OCR text or None if processing failed
+        """
+        try:
+            print(f"📄 Processing PDF: {pdf_path.name}")
+            
+            # Verify PDF exists
+            if not pdf_path.exists():
+                print(f"❌ PDF file not found: {pdf_path}")
+                logging.error(f"PDF file not found: {pdf_path}")
+                return None
+            
+            # Get page count
+            total_pages = self.get_pdf_page_count(pdf_path)
+            print(f"   {total_pages} pages found")
+            
+            # Process each page and collect text
+            all_text = []
+            successful_pages = 0
+            failed_pages = []
+            
+            for page_idx in range(total_pages):
+                page_num = page_idx + 1  # 1-indexed for display
+                
+                try:
+                    # Extract single page as PDF bytes
+                    page_bytes = self.extract_pdf_page(pdf_path, page_idx)
+                    page_size_mb = len(page_bytes) / (1024 * 1024)
+                    
+                    # Process page (try inline first, then upload if needed)
+                    text = None
+                    if page_size_mb < 20:
+                        text = self.process_pdf_page_inline(page_bytes, page_num)
+                    
+                    # Fallback to upload if inline failed or page too large
+                    if not text:
+                        text = self.process_pdf_page_upload(page_bytes, page_num)
+                    
+                    if text and text.strip():
+                        # For first page, no header
+                        if page_num == 1:
+                            all_text.append(text)
+                        else:
+                            all_text.append(f"\n\n--- Page {page_num} ---\n\n{text}")
+                        successful_pages += 1
+                    else:
+                        failed_pages.append(page_num)
+                        error_msg = f"[ERROR: Failed to process page {page_num}]"
+                        if page_num == 1:
+                            all_text.append(error_msg)
+                        else:
+                            all_text.append(f"\n\n--- Page {page_num} ---\n\n{error_msg}")
+                
+                except Exception as e:
+                    failed_pages.append(page_num)
+                    print(f"❌ Error processing page {page_num}: {e}")
+                    logging.error(f"Error processing page {page_num} of {pdf_path}: {e}")
+                    error_msg = f"[ERROR: Failed to process page {page_num}: {str(e)}]"
+                    if page_num == 1:
+                        all_text.append(error_msg)
+                    else:
+                        all_text.append(f"\n\n--- Page {page_num} ---\n\n{error_msg}")
+            
+            # Log processing statistics
+            success_rate = (successful_pages / total_pages) * 100 if total_pages > 0 else 0
+            print(f"   ✅ {successful_pages}/{total_pages} pages successful ({success_rate:.1f}%)")
+            
+            if failed_pages:
+                logging.warning(f"PDF {pdf_path.name}: Failed pages: {failed_pages}")
+            
+            return "".join(all_text) if all_text else None
+            
+        except Exception as e:
+            print(f"❌ Error processing PDF {pdf_path}: {e}")
+            logging.error(f"Error processing PDF {pdf_path}: {e}", exc_info=True)
+            return None
+
+def find_excel_file(directory: Path) -> Optional[Path]:
+    """
+    Check if there's an Excel file in the specified directory.
+    
+    Args:
+        directory (Path): Directory to search for Excel files
+        
+    Returns:
+        Optional[Path]: Path to the first Excel file found, or None
+    """
+    excel_extensions = ['*.xlsx', '*.xls']
+    
+    for pattern in excel_extensions:
+        excel_files = list(directory.glob(pattern))
+        if excel_files:
+            return excel_files[0]  # Return the first Excel file found
+    
+    return None
+
+def process_with_spreadsheet(processor: 'GeminiPDFProcessor', excel_path: Path, pdf_dir: Path) -> None:
+    """
+    Process PDFs based on filenames listed in an Excel spreadsheet.
+    
+    Reads the 'filename' column from the spreadsheet, processes each PDF,
+    and writes the OCR results back to a new 'OCR' column.
+    
+    Args:
+        processor (GeminiPDFProcessor): Initialized PDF processor
+        excel_path (Path): Path to the Excel spreadsheet
+        pdf_dir (Path): Directory containing the PDF files
+    """
+    print("\n" + "="*60)
+    print("📊 SPREADSHEET MODE")
+    print("="*60)
+    print(f"📁 Excel file: {excel_path.name}")
+    print(f"📂 PDF directory: {pdf_dir}")
+    print("="*60 + "\n")
+    
+    try:
+        # Read the Excel file
+        print("📖 Reading Excel spreadsheet...")
+        df = pd.read_excel(excel_path)
+        
+        # Check if 'filename' column exists
+        if 'filename' not in df.columns:
+            print("❌ Error: 'filename' column not found in spreadsheet!")
+            print(f"   Available columns: {list(df.columns)}")
+            logging.error(f"'filename' column not found in {excel_path}. Available: {list(df.columns)}")
+            return
+        
+        print(f"✅ Found {len(df)} rows in spreadsheet")
+        
+        # Add OCR column if it doesn't exist
+        if 'OCR' not in df.columns:
+            df['OCR'] = ''
+        
+        # Track statistics
+        stats = {
+            'total_rows': len(df),
+            'processed': 0,
+            'skipped_empty': 0,
+            'skipped_missing': 0,
+            'failed': 0
+        }
+        
+        # Process each row
+        for idx, row in df.iterrows():
+            row_num = idx + 1  # 1-indexed for display
+            print(f"\n{'─'*60}")
+            print(f"Row {row_num}/{len(df)}")
+            print(f"{'─'*60}")
+            
+            # Get filename from the row
+            filename = row.get('filename')
+            
+            # Handle empty or missing filename
+            if pd.isna(filename) or not str(filename).strip():
+                print(f"⚠️  Row {row_num}: No filename specified - skipping")
+                df.at[idx, 'OCR'] = '[SKIPPED: No filename provided]'
+                stats['skipped_empty'] += 1
+                continue
+            
+            filename = str(filename).strip()
+            print(f"📄 Filename: {filename}")
+            
+            # Construct full path to PDF
+            pdf_path = pdf_dir / filename
+            
+            # Check if PDF exists
+            if not pdf_path.exists():
+                # Try adding .pdf extension if missing
+                if not filename.lower().endswith('.pdf'):
+                    pdf_path = pdf_dir / f"{filename}.pdf"
+                
+                if not pdf_path.exists():
+                    print(f"⚠️  Row {row_num}: File not found: {filename}")
+                    df.at[idx, 'OCR'] = f'[ERROR: File not found - {filename}]'
+                    stats['skipped_missing'] += 1
+                    logging.warning(f"Row {row_num}: File not found: {filename}")
+                    continue
+            
+            # Process the PDF
+            try:
+                print(f"🔄 Processing {pdf_path.name}...")
+                ocr_text = processor.process_pdf_to_text(pdf_path)
+                
+                if ocr_text:
+                    df.at[idx, 'OCR'] = ocr_text
+                    stats['processed'] += 1
+                    print(f"✅ Row {row_num}: Successfully processed")
+                else:
+                    df.at[idx, 'OCR'] = '[ERROR: OCR processing failed]'
+                    stats['failed'] += 1
+                    print(f"❌ Row {row_num}: OCR processing failed")
+                    
+            except Exception as e:
+                df.at[idx, 'OCR'] = f'[ERROR: {str(e)}]'
+                stats['failed'] += 1
+                print(f"❌ Row {row_num}: Error - {e}")
+                logging.error(f"Row {row_num} ({filename}): {e}")
+        
+        # Save the updated spreadsheet
+        print(f"\n{'='*60}")
+        print("💾 Saving results to spreadsheet...")
+        df.to_excel(excel_path, index=False)
+        print(f"✅ Spreadsheet updated: {excel_path}")
+        
+        # Print summary statistics
+        print(f"\n{'='*60}")
+        print("📈 PROCESSING SUMMARY")
+        print(f"{'='*60}")
+        print(f"Total rows: {stats['total_rows']}")
+        print(f"Successfully processed: {stats['processed']}")
+        print(f"Skipped (no filename): {stats['skipped_empty']}")
+        print(f"Skipped (file not found): {stats['skipped_missing']}")
+        print(f"Failed: {stats['failed']}")
+        
+        if stats['total_rows'] > 0:
+            success_rate = (stats['processed'] / stats['total_rows']) * 100
+            print(f"Success rate: {success_rate:.1f}%")
+        
+        print(f"{'='*60}\n")
+        
+        # Log summary
+        logging.info(f"Spreadsheet processing complete: {stats['processed']}/{stats['total_rows']} successful")
+        
+    except Exception as e:
+        print(f"\n❌ Error processing spreadsheet: {e}")
+        logging.error(f"Error processing spreadsheet {excel_path}: {e}", exc_info=True)
+
 def main():
     """
     Main function to orchestrate the page-by-page PDF OCR process.
@@ -603,67 +841,80 @@ def main():
     print("\n🔧 Initializing Gemini PDF Processor...")
     processor = GeminiPDFProcessor(api_key, selected_model_name)
     
-    # Find all PDF files to process
-    pdf_files = list(pdf_dir.glob("*.pdf"))
-    if not pdf_files:
-        print("\n❌ No PDF files found in the PDF directory!")
-        return
+    # Check for Excel spreadsheet in PDF directory
+    excel_file = find_excel_file(pdf_dir)
     
-    total_pdfs = len(pdf_files)
-    print(f"\n📚 Found {total_pdfs} PDF files to process")
-    
-    # Track overall statistics
-    overall_stats = {
-        'total_pdfs': total_pdfs,
-        'processed_pdfs': 0,
-        'failed_pdfs': 0,
-        'total_size_mb': 0,
-        'processing_start': time.time()
-    }
-    
-    # Process each PDF file sequentially
-    for idx, pdf_path in enumerate(pdf_files, 1):
-        print(f"\n📊 Progress: PDF {idx}/{total_pdfs} ({(idx/total_pdfs*100):.1f}%)")
+    if excel_file:
+        # Spreadsheet mode: Process PDFs based on spreadsheet
+        print(f"\n✅ Found Excel spreadsheet: {excel_file.name}")
+        print("📊 Will process PDFs based on spreadsheet entries")
+        process_with_spreadsheet(processor, excel_file, pdf_dir)
+    else:
+        # Direct mode: Process all PDFs in directory
+        print("\n📁 No Excel spreadsheet found")
+        print("📂 Will process all PDFs directly from folder")
         
-        try:
-            processor.process_pdf(pdf_path, output_dir)
+        # Find all PDF files to process
+        pdf_files = list(pdf_dir.glob("*.pdf"))
+        if not pdf_files:
+            print("\n❌ No PDF files found in the PDF directory!")
+            return
+        
+        total_pdfs = len(pdf_files)
+        print(f"\n📚 Found {total_pdfs} PDF files to process")
+        
+        # Track overall statistics
+        overall_stats = {
+            'total_pdfs': total_pdfs,
+            'processed_pdfs': 0,
+            'failed_pdfs': 0,
+            'total_size_mb': 0,
+            'processing_start': time.time()
+        }
+        
+        # Process each PDF file sequentially
+        for idx, pdf_path in enumerate(pdf_files, 1):
+            print(f"\n📊 Progress: PDF {idx}/{total_pdfs} ({(idx/total_pdfs*100):.1f}%)")
             
-            # Check if output file has content
-            output_file = output_dir / f"{pdf_path.stem}.txt"
-            if output_file.exists() and output_file.stat().st_size > 100:
-                overall_stats['processed_pdfs'] += 1
-                overall_stats['total_size_mb'] += pdf_path.stat().st_size / (1024 * 1024)
-                logging.info(f"Successfully processed {pdf_path.name}")
-            else:
-                overall_stats['failed_pdfs'] += 1
-                logging.warning(f"Output file for {pdf_path.name} is empty or very small")
+            try:
+                processor.process_pdf(pdf_path, output_dir)
                 
-        except Exception as e:
-            overall_stats['failed_pdfs'] += 1
-            print(f"❌ Failed to process {pdf_path.name}: {e}")
-            logging.error(f"Failed to process {pdf_path.name}: {e}")
+                # Check if output file has content
+                output_file = output_dir / f"{pdf_path.stem}.txt"
+                if output_file.exists() and output_file.stat().st_size > 100:
+                    overall_stats['processed_pdfs'] += 1
+                    overall_stats['total_size_mb'] += pdf_path.stat().st_size / (1024 * 1024)
+                    logging.info(f"Successfully processed {pdf_path.name}")
+                else:
+                    overall_stats['failed_pdfs'] += 1
+                    logging.warning(f"Output file for {pdf_path.name} is empty or very small")
+                    
+            except Exception as e:
+                overall_stats['failed_pdfs'] += 1
+                print(f"❌ Failed to process {pdf_path.name}: {e}")
+                logging.error(f"Failed to process {pdf_path.name}: {e}")
 
-    # Calculate processing time
-    processing_time = time.time() - overall_stats['processing_start']
-    
-    # Print final summary
-    print("\n" + "="*60)
-    print("📈 FINAL PROCESSING SUMMARY")
-    print("="*60)
-    print(f"Total PDFs found: {overall_stats['total_pdfs']}")
-    print(f"Successfully processed: {overall_stats['processed_pdfs']}")
-    print(f"Failed to process: {overall_stats['failed_pdfs']}")
-    print(f"Total size processed: {overall_stats['total_size_mb']:.2f} MB")
-    print(f"Processing time: {processing_time/60:.1f} minutes")
-    
-    if overall_stats['total_pdfs'] > 0:
-        success_rate = (overall_stats['processed_pdfs'] / overall_stats['total_pdfs']) * 100
-        print(f"Overall success rate: {success_rate:.1f}%")
-    
-    print("="*60)
-    
-    # Log final summary
-    logging.info(f"Processing complete. {overall_stats['processed_pdfs']}/{overall_stats['total_pdfs']} PDFs processed successfully in {processing_time/60:.1f} minutes")
+        # Calculate processing time
+        processing_time = time.time() - overall_stats['processing_start']
+        
+        # Print final summary
+        print("\n" + "="*60)
+        print("📈 FINAL PROCESSING SUMMARY")
+        print("="*60)
+        print(f"Total PDFs found: {overall_stats['total_pdfs']}")
+        print(f"Successfully processed: {overall_stats['processed_pdfs']}")
+        print(f"Failed to process: {overall_stats['failed_pdfs']}")
+        print(f"Total size processed: {overall_stats['total_size_mb']:.2f} MB")
+        print(f"Processing time: {processing_time/60:.1f} minutes")
+        
+        if overall_stats['total_pdfs'] > 0:
+            success_rate = (overall_stats['processed_pdfs'] / overall_stats['total_pdfs']) * 100
+            print(f"Overall success rate: {success_rate:.1f}%")
+        
+        print("="*60)
+        
+        # Log final summary
+        logging.info(f"Processing complete. {overall_stats['processed_pdfs']}/{overall_stats['total_pdfs']} PDFs processed successfully in {processing_time/60:.1f} minutes")
 
     print("\n✨ Direct PDF OCR Process Complete! ✨\n")
 
