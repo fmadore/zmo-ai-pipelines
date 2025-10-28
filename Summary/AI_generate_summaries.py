@@ -13,8 +13,10 @@ import os
 import json
 import logging
 from typing import Optional
+from pathlib import Path
 from dotenv import load_dotenv
 from tqdm import tqdm
+import pandas as pd
 
 from google import genai
 from google.genai import types, errors
@@ -194,6 +196,216 @@ def process_txt_files(provider: str, client, input_dir: str, output_dir: str):
     logging.info("Batch complete.")
 
 # ------------------------------------------------------------------
+# Spreadsheet Processing
+# ------------------------------------------------------------------
+def extract_keywords_from_summary(summary_text: str) -> str:
+    """
+    Extract keywords from the summary text and format them as pipe-separated values.
+    
+    The summary typically includes keywords at the end. This function extracts them
+    and formats them as: keyword1 | keyword2 | keyword3
+    
+    Args:
+        summary_text (str): The full summary text with keywords
+        
+    Returns:
+        str: Pipe-separated keywords, or empty string if none found
+    """
+    if not summary_text:
+        return ""
+    
+    # Look for common keyword indicators
+    keyword_indicators = [
+        "Keywords:",
+        "Mots-clés:",
+        "Key words:",
+        "Tags:",
+        "الكلمات المفتاحية:",
+    ]
+    
+    for indicator in keyword_indicators:
+        if indicator in summary_text:
+            # Find the keyword section
+            parts = summary_text.split(indicator)
+            if len(parts) > 1:
+                keyword_section = parts[-1].strip()
+                
+                # Extract keywords (they might be comma-separated or newline-separated)
+                # Remove any leading numbers, bullets, or dashes
+                import re
+                # Replace commas and newlines with pipes
+                keywords = re.sub(r'[\n,;]', '|', keyword_section)
+                # Clean up multiple pipes and whitespace
+                keywords = re.sub(r'\s*\|\s*', ' | ', keywords)
+                keywords = re.sub(r'\s+', ' ', keywords)
+                # Remove any leading/trailing pipes
+                keywords = keywords.strip(' |')
+                # Remove bullet points, numbers, dashes
+                keywords = re.sub(r'[•\-\d\.]+\s*', '', keywords)
+                
+                return keywords.strip()
+    
+    return ""
+
+def find_excel_file(directory: Path) -> Optional[Path]:
+    """
+    Check if there's an Excel file in the specified directory.
+    
+    Args:
+        directory (Path): Directory to search for Excel files
+        
+    Returns:
+        Optional[Path]: Path to the first Excel file found, or None
+    """
+    excel_extensions = ['*.xlsx', '*.xls']
+    
+    for pattern in excel_extensions:
+        excel_files = list(directory.glob(pattern))
+        if excel_files:
+            return excel_files[0]  # Return the first Excel file found
+    
+    return None
+
+def process_with_spreadsheet(provider: str, client, excel_path: Path) -> None:
+    """
+    Process summaries based on OCR text in an Excel spreadsheet.
+    
+    Reads the 'OCR' column from the spreadsheet, generates summaries,
+    and writes the results back to a new 'Summary' column.
+    
+    Args:
+        provider (str): AI provider ('openai' or 'gemini')
+        client: Initialized AI client
+        excel_path (Path): Path to the Excel spreadsheet
+    """
+    print("\n" + "="*60)
+    print("📊 SPREADSHEET MODE")
+    print("="*60)
+    print(f"📁 Excel file: {excel_path.name}")
+    print("="*60 + "\n")
+    
+    try:
+        # Read the Excel file
+        print("📖 Reading Excel spreadsheet...")
+        df = pd.read_excel(excel_path)
+        
+        # Check if 'OCR' column exists
+        if 'OCR' not in df.columns:
+            print("❌ Error: 'OCR' column not found in spreadsheet!")
+            print(f"   Available columns: {list(df.columns)}")
+            logging.error(f"'OCR' column not found in {excel_path}. Available: {list(df.columns)}")
+            return
+        
+        print(f"✅ Found {len(df)} rows in spreadsheet")
+        
+        # Add Summary and Keywords columns if they don't exist
+        if 'Summary' not in df.columns:
+            df['Summary'] = ''
+        if 'Keywords' not in df.columns:
+            df['Keywords'] = ''
+        
+        # Track statistics
+        stats = {
+            'total_rows': len(df),
+            'processed': 0,
+            'skipped_empty': 0,
+            'skipped_error': 0,
+            'failed': 0
+        }
+        
+        # Process each row
+        for idx, row in df.iterrows():
+            row_num = idx + 1  # 1-indexed for display
+            print(f"\n{'─'*60}")
+            print(f"Row {row_num}/{len(df)}")
+            print(f"{'─'*60}")
+            
+            # Get OCR text from the row
+            ocr_text = row.get('OCR')
+            
+            # Handle empty or missing OCR text
+            if pd.isna(ocr_text) or not str(ocr_text).strip():
+                print(f"⚠️  Row {row_num}: No OCR text - skipping")
+                df.at[idx, 'Summary'] = '[SKIPPED: No OCR text provided]'
+                df.at[idx, 'Keywords'] = ''
+                stats['skipped_empty'] += 1
+                continue
+            
+            ocr_text = str(ocr_text).strip()
+            
+            # Check if OCR text is an error message
+            if ocr_text.startswith('[ERROR:') or ocr_text.startswith('[SKIPPED:'):
+                print(f"⚠️  Row {row_num}: OCR contains error/skip message - skipping")
+                df.at[idx, 'Summary'] = '[SKIPPED: OCR failed]'
+                df.at[idx, 'Keywords'] = ''
+                stats['skipped_error'] += 1
+                continue
+            
+            # Get filename for logging (if available)
+            filename = row.get('filename', f'Row {row_num}')
+            print(f"📄 Processing: {filename}")
+            print(f"   OCR text length: {len(ocr_text)} characters")
+            
+            # Generate summary
+            try:
+                if provider == PROVIDER_GEMINI:
+                    summary = generate_summary_gemini(client, ocr_text)
+                else:
+                    summary = generate_summary_openai(client, ocr_text)
+                
+                if summary:
+                    # Extract keywords from the summary
+                    keywords = extract_keywords_from_summary(summary)
+                    
+                    df.at[idx, 'Summary'] = summary
+                    df.at[idx, 'Keywords'] = keywords
+                    stats['processed'] += 1
+                    print(f"✅ Row {row_num}: Successfully generated summary")
+                    if keywords:
+                        print(f"   Keywords: {keywords}")
+                else:
+                    df.at[idx, 'Summary'] = '[ERROR: Summary generation failed]'
+                    df.at[idx, 'Keywords'] = ''
+                    stats['failed'] += 1
+                    print(f"❌ Row {row_num}: Summary generation failed")
+                    
+            except Exception as e:
+                df.at[idx, 'Summary'] = f'[ERROR: {str(e)}]'
+                df.at[idx, 'Keywords'] = ''
+                stats['failed'] += 1
+                print(f"❌ Row {row_num}: Error - {e}")
+                logging.error(f"Row {row_num} ({filename}): {e}")
+        
+        # Save the updated spreadsheet
+        print(f"\n{'='*60}")
+        print("💾 Saving results to spreadsheet...")
+        df.to_excel(excel_path, index=False)
+        print(f"✅ Spreadsheet updated: {excel_path}")
+        
+        # Print summary statistics
+        print(f"\n{'='*60}")
+        print("📈 PROCESSING SUMMARY")
+        print(f"{'='*60}")
+        print(f"Total rows: {stats['total_rows']}")
+        print(f"Successfully processed: {stats['processed']}")
+        print(f"Skipped (no OCR text): {stats['skipped_empty']}")
+        print(f"Skipped (OCR error): {stats['skipped_error']}")
+        print(f"Failed: {stats['failed']}")
+        
+        if stats['total_rows'] > 0:
+            success_rate = (stats['processed'] / stats['total_rows']) * 100
+            print(f"Success rate: {success_rate:.1f}%")
+        
+        print(f"{'='*60}\n")
+        
+        # Log summary
+        logging.info(f"Spreadsheet processing complete: {stats['processed']}/{stats['total_rows']} successful")
+        
+    except Exception as e:
+        print(f"\n❌ Error processing spreadsheet: {e}")
+        logging.error(f"Error processing spreadsheet {excel_path}: {e}", exc_info=True)
+
+# ------------------------------------------------------------------
 # User Interaction & Main
 # ------------------------------------------------------------------
 def select_provider() -> str:
@@ -211,8 +423,7 @@ def main():
         input_dir = os.path.join(script_dir, 'TXT')
         output_dir = os.path.join(script_dir, 'Summaries_TXT')
         logging.info("Starting summary generation pipeline")
-        logging.info(f"Input: {input_dir}")
-        logging.info(f"Output: {output_dir}")
+        
         provider = select_provider()
         if provider == PROVIDER_GEMINI:
             client = initialize_gemini_client()
@@ -220,7 +431,24 @@ def main():
             client = initialize_openai_client()
             if client is None:
                 return
-        process_txt_files(provider, client, input_dir, output_dir)
+        
+        # Check for Excel spreadsheet in the TXT directory (where input files are)
+        input_path = Path(input_dir)
+        excel_file = find_excel_file(input_path)
+        
+        if excel_file:
+            # Spreadsheet mode: Process summaries from OCR column
+            print(f"\n✅ Found Excel spreadsheet: {excel_file.name}")
+            print("📊 Will generate summaries from OCR column in spreadsheet")
+            process_with_spreadsheet(provider, client, excel_file)
+        else:
+            # Direct mode: Process TXT files
+            print("\n📁 No Excel spreadsheet found")
+            print("📂 Will process TXT files from folder")
+            print(f"Input: {input_dir}")
+            print(f"Output: {output_dir}")
+            process_txt_files(provider, client, input_dir, output_dir)
+        
         logging.info("Completed successfully")
     except FileNotFoundError as e:
         logging.error(e)
