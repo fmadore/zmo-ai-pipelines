@@ -42,7 +42,7 @@ You need Python 3.8 or newer installed on your computer.
 ### Step 2: Get API Keys
 
 **For Gemini (required for Audio, OCR, and HTR):**
-1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
+1. Go to [Google AI Studio](https://aistudio.google.com/api-keys)
 2. Sign in with your Google account
 3. Click "Create API Key"
 4. Copy your API key (you'll need it in the next step)
