@@ -218,6 +218,7 @@ All tools now support **two modes of operation**:
    - Read text from the `OCR` column
    - Generate summaries for each row
    - Add a `Summary` column with the results
+   - Add a `Keywords` column with extracted keywords (pipe-separated: `keyword1 | keyword2 | keyword3`)
    - Save the updated spreadsheet
    
 **Spreadsheet Benefits:**
@@ -225,6 +226,7 @@ All tools now support **two modes of operation**:
 - All data in one organized file
 - Easy to review and compare original text with summaries
 - Automatically skips rows with errors or missing data
+- Keywords extracted and formatted separately for easy filtering/analysis
 
 **Features:**
 - Generates concise summaries in the same language as the input text
@@ -245,7 +247,7 @@ You can now chain all three tools together using spreadsheets:
    - Result: Excel file now has `filename` and `OCR` columns
 4. Move `data.xlsx` to `Summary/TXT/` folder
 5. Run Summary: `python AI_generate_summaries.py`
-   - Result: Excel file now has `filename`, `OCR`, and `Summary` columns
+   - Result: Excel file now has `filename`, `OCR`, `Summary`, and `Keywords` columns
 
 **Example: HTR → Summary Pipeline**
 1. Create `manuscripts.xlsx` with a `filename` column
@@ -254,14 +256,14 @@ You can now chain all three tools together using spreadsheets:
    - Result: Excel file now has `filename` and `HTR` columns
 4. Move `manuscripts.xlsx` to `Summary/TXT/` folder
 5. Run Summary (it will read from `OCR` or `HTR` column)
-   - Result: Excel file now has `filename`, `HTR`, and `Summary` columns
+   - Result: Excel file now has `filename`, `HTR`, `Summary`, and `Keywords` columns
 
 **Spreadsheet Column Names:**
 - **Input for OCR/HTR:** `filename` (required)
 - **Output from OCR:** `OCR` (created automatically)
 - **Output from HTR:** `HTR` (created automatically)
 - **Input for Summary:** `OCR` or `HTR` (must exist)
-- **Output from Summary:** `Summary` (created automatically)
+- **Output from Summary:** `Summary` and `Keywords` (created automatically)
 
 ---
 
