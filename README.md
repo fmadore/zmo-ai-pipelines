@@ -92,8 +92,13 @@ After installation, update the paths in your `.env` file if needed.
 
 ## 📖 How to Use Each Tool
 
+All tools now support **two modes of operation**:
+1. **Direct Mode** - Process all files in a folder
+2. **Spreadsheet Mode** - Use an Excel file to specify which files to process and collect results
+
 ### 🎤 Audio Transcription
 
+**Direct Mode:**
 1. Place your audio files in the `Audio-transcription/Audio/` folder
 2. Open a terminal in the `Audio-transcription/` folder
 3. Run:
@@ -112,15 +117,39 @@ After installation, update the paths in your `.env` file if needed.
 
 ### 📄 OCR (Printed Text)
 
+**Direct Mode:**
 1. Place your PDF files in the `OCR/PDF/` folder
 2. Open a terminal in the `OCR/` folder
 3. Run:
    ```
    python gemini_ocr_processor.py
    ```
-4. The script will process all PDFs automatically
-5. Find the extracted text in the `OCR/OCR_output/` folder
-6. Check the `OCR/log/` folder for processing details
+4. Choose your Gemini model (Flash or Pro)
+5. The script will process all PDFs automatically
+6. Find the extracted text in the `OCR/OCR_Results/` folder
+7. Check the `OCR/log/` folder for processing details
+
+**Spreadsheet Mode:**
+1. Create an Excel file (`.xlsx` or `.xls`) with a column named `filename`
+2. List the PDF filenames you want to process in this column
+3. Place the Excel file in the `OCR/PDF/` folder
+4. Place your PDF files in the same `OCR/PDF/` folder
+5. Run:
+   ```
+   python gemini_ocr_processor.py
+   ```
+6. Choose your Gemini model
+7. The script will automatically detect the Excel file and:
+   - Process only the PDFs listed in the spreadsheet
+   - Add an `OCR` column with the extracted text
+   - Save the updated spreadsheet with results
+8. Check the `OCR/log/` folder for processing details
+
+**Spreadsheet Benefits:**
+- Process specific files from a large collection
+- Keep all results organized in one file
+- Easily feed OCR results to the Summary pipeline
+- Track which files have been processed
 
 **Best for:**
 - Books, newspapers, magazines
@@ -129,6 +158,7 @@ After installation, update the paths in your `.env` file if needed.
 
 ### ✍️ HTR (Handwritten Text)
 
+**Direct Mode:**
 1. Place your PDF files in the `HTR/PDF/` folder
 2. Open a terminal in the `HTR/` folder
 3. Run:
@@ -139,13 +169,31 @@ After installation, update the paths in your `.env` file if needed.
    - **1** for French handwritten documents
    - **2** for Arabic handwritten manuscripts
    - **3** for multilingual documents
-5. Find the transcribed text in the `HTR/HTR_output/` folder
-6. Check the `HTR/log/` folder for processing details
+5. Choose your Gemini model (Flash or Pro)
+6. Find the transcribed text in the `HTR/OCR_Results/` folder
+7. Check the `HTR/log/` folder for processing details
+
+**Spreadsheet Mode:**
+1. Create an Excel file (`.xlsx` or `.xls`) with a column named `filename`
+2. List the PDF filenames you want to process in this column
+3. Place the Excel file in the `HTR/PDF/` folder
+4. Place your PDF files in the same `HTR/PDF/` folder
+5. Run:
+   ```
+   python gemini_htr_processor.py
+   ```
+6. Choose the language and model
+7. The script will automatically detect the Excel file and:
+   - Process only the PDFs listed in the spreadsheet
+   - Add an `HTR` column with the transcribed text
+   - Save the updated spreadsheet with results
+8. Check the `HTR/log/` folder for processing details
 
 **Note:** Handwritten text recognition is more challenging and may require manual review for accuracy.
 
 ### 📊 Text Summarization
 
+**Direct Mode:**
 1. Place your text files (.txt) in the `Summary/TXT/` folder
 2. Open a terminal in the `Summary/` folder
 3. Run:
@@ -157,11 +205,63 @@ After installation, update the paths in your `.env` file if needed.
    - **2** for Google Gemini (uses your Gemini API key)
 5. Find your summaries with keywords in the `Summary/Summaries_TXT/` folder
 
+**Spreadsheet Mode:**
+1. Use an Excel file (`.xlsx` or `.xls`) with an `OCR` or `HTR` column containing the text to summarize
+   - This can be the output from the OCR or HTR pipeline
+2. Place the Excel file in the `Summary/TXT/` folder
+3. Run:
+   ```
+   python AI_generate_summaries.py
+   ```
+4. Choose your AI provider
+5. The script will automatically detect the Excel file and:
+   - Read text from the `OCR` column
+   - Generate summaries for each row
+   - Add a `Summary` column with the results
+   - Save the updated spreadsheet
+   
+**Spreadsheet Benefits:**
+- Seamless integration with OCR/HTR outputs
+- All data in one organized file
+- Easy to review and compare original text with summaries
+- Automatically skips rows with errors or missing data
+
 **Features:**
 - Generates concise summaries in the same language as the input text
 - Automatically extracts 5-10 relevant keywords for each document
 - Works with any language
 - Choose between OpenAI GPT or Google Gemini models
+
+---
+
+## 🔄 Complete Pipeline Workflow
+
+You can now chain all three tools together using spreadsheets:
+
+**Example: OCR → Summary Pipeline**
+1. Create `data.xlsx` with a `filename` column listing your PDF files
+2. Place `data.xlsx` and PDFs in `OCR/PDF/` folder
+3. Run OCR: `python gemini_ocr_processor.py`
+   - Result: Excel file now has `filename` and `OCR` columns
+4. Move `data.xlsx` to `Summary/TXT/` folder
+5. Run Summary: `python AI_generate_summaries.py`
+   - Result: Excel file now has `filename`, `OCR`, and `Summary` columns
+
+**Example: HTR → Summary Pipeline**
+1. Create `manuscripts.xlsx` with a `filename` column
+2. Place it in `HTR/PDF/` with your handwritten PDFs
+3. Run HTR: `python gemini_htr_processor.py`
+   - Result: Excel file now has `filename` and `HTR` columns
+4. Move `manuscripts.xlsx` to `Summary/TXT/` folder
+5. Run Summary (it will read from `OCR` or `HTR` column)
+   - Result: Excel file now has `filename`, `HTR`, and `Summary` columns
+
+**Spreadsheet Column Names:**
+- **Input for OCR/HTR:** `filename` (required)
+- **Output from OCR:** `OCR` (created automatically)
+- **Output from HTR:** `HTR` (created automatically)
+- **Input for Summary:** `OCR` or `HTR` (must exist)
+- **Output from Summary:** `Summary` (created automatically)
 
 ---
 
@@ -175,20 +275,24 @@ zmo-ai-pipelines/
 │   ├── prompts/            (Different transcription styles)
 │   └── transcribe_audio.py
 ├── OCR/
-│   ├── PDF/                ← Put PDFs with printed text here
-│   ├── OCR_output/         ← Extracted text appears here
+│   ├── PDF/                ← Put PDFs here (and optional Excel file)
+│   ├── OCR_Results/        ← Extracted text appears here (direct mode)
+│   ├── log/                (Processing logs)
 │   └── gemini_ocr_processor.py
 ├── HTR/
-│   ├── PDF/                ← Put PDFs with handwritten text here
-│   ├── HTR_output/         ← Transcriptions appear here
+│   ├── PDF/                ← Put PDFs here (and optional Excel file)
+│   ├── OCR_Results/        ← Transcriptions appear here (direct mode)
+│   ├── log/                (Processing logs)
 │   └── gemini_htr_processor.py
 ├── Summary/
-│   ├── TXT/                ← Put text files here
-│   ├── Summaries_TXT/      ← Summaries with keywords appear here
+│   ├── TXT/                ← Put text files or Excel file here
+│   ├── Summaries_TXT/      ← Summaries appear here (direct mode)
 │   └── AI_generate_summaries.py
-├── .env                    ← Your API key goes here
+├── .env                    ← Your API keys go here
 └── requirements.txt        (List of required packages)
 ```
+
+**Note:** When using spreadsheet mode, the Excel file is updated in place with new columns containing the results.
 
 ---
 
@@ -209,10 +313,20 @@ zmo-ai-pipelines/
 - Clean, clear handwriting transcribes better
 - Historical documents may require manual review for accuracy
 
+### For Spreadsheet Mode:
+- Use `.xlsx` or `.xls` format (Excel files)
+- The `filename` column is required for OCR/HTR processing
+- Files without the `.pdf` extension will have it added automatically
+- Rows with missing filenames or files will be skipped with clear error messages
+- The spreadsheet is updated in place - keep a backup if needed
+- You can process the same spreadsheet multiple times (e.g., re-run failed items)
+- Empty or error rows are clearly marked so you can identify issues
+
 ### General:
 - Process one or a few files at a time initially to check quality
 - Check the log files if something goes wrong
 - Keep your API key private and never share it
+- Spreadsheet mode is ideal for batch processing and keeping organized records
 
 ---
 
