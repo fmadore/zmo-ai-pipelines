@@ -4,6 +4,8 @@ openai                # OpenAI API (optional, for summaries)
 
 # Document Processing
 PyPDF2                # PDF page extraction (OCR, HTR)
+pandas                # Excel spreadsheet processing
+openpyxl              # Excel file support for pandas
 
 # Audio Processing
 pydub                 # Audio file manipulation and splitting
