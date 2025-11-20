@@ -813,21 +813,27 @@ def main():
 
     # Present model selection options to user
     print("\nPlease choose the Gemini model to use:")
-    print("1: gemini-2.5-flash (Faster, good for most cases)")
-    print("2: gemini-2.5-pro (More powerful, more accurate but slower)")
+    print("1: gemini-2.5-pro (High quality, balanced speed)")
+    print("2: gemini-2.5-flash (Faster, good for most cases)")
+    print("3: gemini-3-pro-preview (Gemini 3.0 preview)")
     
     # Get valid model choice from user
     model_choice = ""
-    while model_choice not in ["1", "2"]:
-        model_choice = input("Enter your choice (1 or 2): ")
-        if model_choice not in ["1", "2"]:
-            print("❌ Invalid choice. Please enter 1 or 2.")
+    while model_choice not in ["1", "2", "3"]:
+        model_choice = input("Enter your choice (1, 2, or 3) or press Enter for default (gemini-2.5-pro): ")
+        if not model_choice:  # User pressed Enter without input
+            model_choice = "1"  # Default to gemini-2.5-pro
+            break
+        if model_choice not in ["1", "2", "3"]:
+            print("❌ Invalid choice. Please enter 1, 2, or 3.")
 
     # Map choice to model name
     if model_choice == "1":
+        selected_model_name = "gemini-2.5-pro"
+    elif model_choice == "2":
         selected_model_name = "gemini-2.5-flash"
     else:
-        selected_model_name = "gemini-2.5-pro"
+        selected_model_name = "gemini-3-pro-preview"
     
     print(f"✅ Using model: {selected_model_name}")
     
