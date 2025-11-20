@@ -645,12 +645,16 @@ def main():
     try:
         # Select model
         print("\nAvailable models:")
-        print("1. gemini-2.5-pro (Higher quality, slower)")
+        print("1. gemini-2.5-pro (High quality, balanced speed)")
         print("2. gemini-2.5-flash (Faster, good quality)")
-        model_choice = input("\nSelect a model (1 or 2) or press Enter for default (gemini-2.5-pro): ").strip()
+        print("3. gemini-3-pro-preview (Gemini 3.0 preview)")
+        model_choice = input("\nSelect a model (1, 2, or 3) or press Enter for default (gemini-2.5-pro): ").strip()
         
         if model_choice == '2':
             selected_model = 'gemini-2.5-flash'
+            print(f"Selected: {selected_model}")
+        elif model_choice == '3':
+            selected_model = 'gemini-3-pro-preview'
             print(f"Selected: {selected_model}")
         else:
             selected_model = 'gemini-2.5-pro'
