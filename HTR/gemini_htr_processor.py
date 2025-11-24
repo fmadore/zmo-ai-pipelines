@@ -85,8 +85,8 @@ class GeminiHTR:
             types.GenerateContentConfig: Configured generation config
         """
         # Set thinking budget based on model capabilities
-        if "2.5-pro" in self.model_name.lower():
-            # Gemini 2.5 Pro requires thinking mode (minimum budget 128)
+        if "2.5-pro" in self.model_name.lower() or "3-pro" in self.model_name.lower():
+            # Gemini 2.5 Pro and 3.0 Pro require thinking mode (minimum budget 128)
             thinking_budget = 128  # Minimum for Pro model
             print(f"🧠 Using thinking budget {thinking_budget} for {self.model_name}")
         else:
@@ -95,7 +95,7 @@ class GeminiHTR:
             print(f"🧠 Disabling thinking mode for {self.model_name}")
         
         return types.GenerateContentConfig(
-            temperature=0.1,      # Lower temperature for more consistent output
+            temperature=0.2,      # Lower temperature for more consistent output
             top_p=0.95,          # High top_p for reliable text recognition
             top_k=40,            # Balanced top_k for good candidate selection
             max_output_tokens=65535,  # Support for long documents
