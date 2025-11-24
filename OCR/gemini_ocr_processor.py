@@ -250,7 +250,17 @@ class GeminiPDFProcessor:
                 else:
                     raise Exception(f"No valid response. Finish reason: {finish_reason}")
             
-            text_content = response.text.replace('\xa0', ' ').strip()
+            # Extract text parts, ignoring thought parts
+            text_parts = []
+            for part in candidate.content.parts:
+                if hasattr(part, 'text') and part.text:
+                    text_parts.append(part.text)
+            
+            if not text_parts:
+                raise Exception("No text content in Gemini response")
+                
+            text_content = "".join(text_parts).replace('\xa0', ' ').strip()
+            
             if not text_content:
                 raise Exception("Empty text response from Gemini")
             
@@ -341,7 +351,17 @@ class GeminiPDFProcessor:
                     else:
                         raise Exception(f"No valid response. Finish reason: {finish_reason}")
                 
-                text_content = response.text.replace('\xa0', ' ').strip()
+                # Extract text parts, ignoring thought parts
+                text_parts = []
+                for part in candidate.content.parts:
+                    if hasattr(part, 'text') and part.text:
+                        text_parts.append(part.text)
+                
+                if not text_parts:
+                    raise Exception("No text content in Gemini response")
+                    
+                text_content = "".join(text_parts).replace('\xa0', ' ').strip()
+                
                 if not text_content:
                     raise Exception("Empty text response from Gemini")
                 
@@ -406,7 +426,15 @@ class GeminiPDFProcessor:
                 if (retry_response.candidates and 
                     retry_response.candidates[0].content and 
                     retry_response.candidates[0].content.parts):
-                    text_content = retry_response.text.replace('\xa0', ' ').strip()
+                    
+                    # Extract text parts, ignoring thought parts
+                    text_parts = []
+                    for part in retry_response.candidates[0].content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            text_parts.append(part.text)
+                            
+                    text_content = "".join(text_parts).replace('\xa0', ' ').strip()
+                    
                     if text_content:
                         print(f"  └─ ✅ Page {page_num} complete (using {strategy_name})")
                         return text_content
