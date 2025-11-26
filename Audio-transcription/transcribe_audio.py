@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Audio Transcription Script using Google Gemini 2.5 Pro
+Audio Transcription Script using Google Gemini API
+
 Transcribes audio files from the Audio folder and saves them as text files.
+Supports multiple Gemini models: gemini-2.5-pro, gemini-2.5-flash, and gemini-3-pro-preview.
+Optionally splits long audio files into segments for improved transcription accuracy.
 """
 
 import os
@@ -45,13 +48,23 @@ except ImportError:  # pragma: no cover
     AudioSegment = None
 
 class AudioTranscriber:
+    """Audio transcription handler using Google Gemini API.
+    
+    Supports transcribing audio files in various formats (MP3, WAV, M4A, FLAC, etc.)
+    with optional audio splitting for long files and customizable transcription prompts.
+    """
+    
     def __init__(self, api_key=None, model='gemini-2.5-pro'):
         """
         Initialize the Audio Transcriber with Gemini API.
         
         Args:
-            api_key (str, optional): Gemini API key. If None, will use GEMINI_API_KEY environment variable.
-            model (str, optional): Model to use. Either 'gemini-2.5-pro' or 'gemini-2.5-flash'. Default is 'gemini-2.5-pro'.
+            api_key (str, optional): Gemini API key. If None, will use GEMINI_API_KEY 
+                environment variable.
+            model (str, optional): Model to use. Supported values:
+                - 'gemini-2.5-pro' (default): High quality, balanced speed
+                - 'gemini-2.5-flash': Faster processing, good quality
+                - 'gemini-3-pro-preview': Gemini 3.0 preview model
         """
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         if not self.api_key:
@@ -408,9 +421,14 @@ class AudioTranscriber:
         Transcribe all audio files in the specified folder.
         
         Args:
-            audio_folder (str): Path to the audio folder
-            output_folder (str): Output folder for transcriptions
-            custom_prompt (str, optional): Custom transcription prompt
+            audio_folder (str): Path to the folder containing audio files to transcribe.
+            output_folder (str): Output folder for saving transcription text files.
+            custom_prompt (str, optional): Custom transcription prompt. If None, uses 
+                the prompt selected during initialization.
+            split_segments (bool, optional): If True, split long audio files into 
+                smaller segments before transcription. Default is False.
+            segment_minutes (int, optional): Length of each segment in minutes when 
+                splitting is enabled. Default is 10 minutes.
         """
         audio_files = self.get_audio_files(audio_folder)
         
@@ -577,13 +595,16 @@ class AudioTranscriber:
     
     def select_prompt(self, prompts_folder="prompts"):
         """
-        Allow user to select a transcription prompt.
+        Allow user to interactively select a transcription prompt from available templates.
         
         Args:
-            prompts_folder (str): Path to the prompts folder
+            prompts_folder (str): Path to the folder containing prompt markdown files.
             
         Returns:
-            tuple: (prompt_content, auto_split) where auto_split is True if splitting should be enabled automatically
+            tuple: A tuple containing:
+                - prompt_content (str): The selected prompt text or default prompt.
+                - auto_split (bool): True if audio splitting should be automatically 
+                  enabled (e.g., for full transcription prompts), False otherwise.
         """
         available_prompts = self.get_available_prompts(prompts_folder)
         
@@ -637,7 +658,10 @@ class AudioTranscriber:
 
 def main():
     """
-    Main function to run the audio transcription script.
+    Main entry point for the audio transcription script.
+    
+    Guides the user through model selection, prompt selection, and audio splitting
+    options, then processes all audio files in the Audio folder.
     """
     print("Audio Transcription using Google Gemini")
     print("=" * 50)
