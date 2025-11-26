@@ -15,6 +15,7 @@
 - Omit routine filler words ("um", "uh", repeated false starts) unless their inclusion changes the meaning of the sentence.
 - Normalize numbers and dates for clarity (e.g., "twenty-five" → "25", "first of May 2024" → "1 May 2024").
 - Preserve names and terms as heard; transliterate non-Latin script names into Latin characters.
+- For culturally specific terms, idiomatic expressions, or words with no direct English equivalent, provide the English translation followed by the original term in parentheses, e.g., "religious endowment (waqf)", "neighborhood (mahalla)".
 - Transcribe profanity, slurs, and sensitive language with their English equivalents.
 - After completing the translation, validate the output to ensure it matches the defined formatting conventions and is free of omissions, correcting any errors identified before finalizing the output.
 
