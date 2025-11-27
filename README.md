@@ -8,7 +8,11 @@ A collection of easy-to-use AI tools for processing documents and audio files. T
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio-transcription/Audio_Transcription_Colab.ipynb)
 
-Just click the badge above and follow the step-by-step instructions. You only need a [Gemini API key](https://aistudio.google.com/app/apikey) (free).
+**For Handwritten Text Recognition (HTR)**, use this notebook to transcribe handwritten documents:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/HTR/HTR_Colab.ipynb)
+
+Just click the badges above and follow the step-by-step instructions. You only need a [Gemini API key](https://aistudio.google.com/app/apikey) (free).
 
 ---
 
