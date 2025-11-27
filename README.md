@@ -8,6 +8,10 @@ A collection of easy-to-use AI tools for processing documents and audio files. T
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio-transcription/Audio_Transcription_Colab.ipynb)
 
+**For OCR (Printed Text)**, use this notebook to extract text from PDFs:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR/OCR_Colab.ipynb)
+
 **For Handwritten Text Recognition (HTR)**, use this notebook to transcribe handwritten documents:
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/HTR/HTR_Colab.ipynb)
