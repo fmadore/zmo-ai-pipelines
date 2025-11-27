@@ -2,6 +2,16 @@
 
 A collection of easy-to-use AI tools for processing documents and audio files. These tools use Google's Gemini AI to automatically transcribe, extract text, and generate summaries.
 
+## ☁️ Quick Start: Google Colab (No Installation Required!)
+
+**For Audio Transcription**, you can use our ready-to-use Google Colab notebook - no installation needed!
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio-transcription/Audio_Transcription_Colab.ipynb)
+
+Just click the badge above and follow the step-by-step instructions. You only need a [Gemini API key](https://aistudio.google.com/app/apikey) (free).
+
+---
+
 ## 🎯 What Can These Tools Do?
 
 ### 📝 Audio Transcription
