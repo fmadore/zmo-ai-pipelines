@@ -16,6 +16,10 @@ A collection of easy-to-use AI tools for processing documents and audio files. T
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/HTR/HTR_Colab.ipynb)
 
+**For Text Summarization**, use this notebook to generate summaries and keywords from text files or Excel sheets:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary/Summary_Colab.ipynb)
+
 Just click the badges above and follow the step-by-step instructions. You only need a [Gemini API key](https://aistudio.google.com/app/apikey) (free).
 
 ---
