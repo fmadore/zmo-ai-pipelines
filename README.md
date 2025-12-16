@@ -10,15 +10,14 @@ We have created **Google Colab notebooks** that run entirely in your browser. Yo
 Convert interviews, meetings, and lectures into text.  
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio-transcription/Audio_Transcription_Colab.ipynb)
 
-**2. OCR (Printed Text)**  
-Extract text from PDFs, books, and newspapers.  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR/OCR_Colab.ipynb)
+**2. OCR/HTR (Printed & Handwritten Text)**  
+Extract text from PDFs and images - works with both printed and handwritten documents!  
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR_HTR_Colab.ipynb)
+- **OCR:** Printed documents, books, newspapers
+- **HTR:** Handwritten manuscripts (French, Arabic, Multilingual)
+- **Formats:** PDF, JPG, PNG, WEBP, HEIC
 
-**3. HTR (Handwritten Text)**  
-Transcribe handwritten manuscripts and documents.  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/HTR/HTR_Colab.ipynb)
-
-**4. Text Summarization**  
+**3. Text Summarization**  
 Generate summaries and keywords from your texts.  
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary/Summary_Colab.ipynb)
 
@@ -26,7 +25,7 @@ Generate summaries and keywords from your texts.
 1. Click one of the "Open in Colab" badges above.
 2. Sign in with your Google account.
 3. Follow the simple step-by-step instructions in the notebook.
-4. You will need a free [Gemini API key](https://aistudio.google.com/app/api-keys).
+4. You will need a free [Gemini API key](https://aistudio.google.com/apikey).
 
 ---
 
@@ -39,17 +38,13 @@ Perfect for qualitative research:
 - **Lectures:** Create structured notes from recordings.
 - **Meetings:** Generate minutes and action items.
 
-### 📄 OCR (Optical Character Recognition)
-Digitize your archives:
-- Extract text from scanned PDFs, images, or books.
-- Works with almost any language (Arabic, French, English, German, etc.).
-- Great for digitizing newspapers, reports, and official documents.
-
-### ✍️ HTR (Handwritten Text Recognition)
-Unlock handwritten archives:
-- Transcribe handwritten letters, manuscripts, and field notes.
-- Specialized support for **French** and **Arabic** handwriting.
-- Useful for historians and archivists working with non-digital sources.
+### 📄 OCR/HTR (Optical & Handwritten Text Recognition)
+Digitize your archives - both printed and handwritten:
+- **OCR:** Extract text from scanned PDFs, images, books, and newspapers.
+- **HTR:** Transcribe handwritten letters, manuscripts, and field notes.
+- **Languages:** Works with any language - specialized prompts for French and Arabic handwriting.
+- **Formats:** Supports PDF files and images (JPG, PNG, WEBP, HEIC).
+- **High Resolution:** Uses Gemini's high-resolution mode for optimal accuracy.
 
 ### 📊 Text Summarization
 Analyze large amounts of text:
@@ -59,75 +54,16 @@ Analyze large amounts of text:
 
 ---
 
-## 💻 Advanced Usage: Local Installation
+## 💻 Why Use Google Colab?
 
-If you are comfortable with using the terminal/command line, you can run these tools directly on your computer. This is faster for processing large batches of files.
+All notebooks run in **Google Colab**, which provides:
+- ✅ **No Installation:** Everything runs in your browser
+- ✅ **Free GPU Access:** Faster processing for large files
+- ✅ **Easy Sharing:** Share notebooks with colleagues
+- ✅ **Secure:** API keys can be stored in Colab Secrets
+- ✅ **Always Updated:** Latest Gemini AI features
 
-### Step 1: Install Python
-You need Python 3.8 or newer.
-- **Windows:** Download from [python.org](https://www.python.org/downloads/)
-- **Mac/Linux:** Usually pre-installed.
-
-### Step 2: Get Your API Key
-1. Go to [Google AI Studio](https://aistudio.google.com/api-keys).
-2. Click "Create API Key".
-3. Copy the key (it starts with `AIza...`).
-
-### Step 3: Setup
-1. Download this project (Code -> Download ZIP) and unzip it.
-2. Open a terminal in the project folder.
-3. Install requirements:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Create a file named `.env` and paste your API key inside:
-   ```
-   GEMINI_API_KEY=your_key_here
-   ```
-
-### Step 4: Run the Tools
-Each tool has its own folder. Navigate to the folder and run the script.
-
-**Audio Transcription:**
-```bash
-cd Audio-transcription
-python transcribe_audio.py
-```
-*Follow the on-screen prompts to select your audio files and settings.*
-
-**OCR (Printed Text):**
-```bash
-cd OCR
-python gemini_ocr_processor.py
-```
-
-**HTR (Handwritten Text):**
-```bash
-cd HTR
-python gemini_htr_processor.py
-```
-
-**Summarization:**
-```bash
-cd Summary
-python AI_generate_summaries.py
-```
-
----
-
-## 📊 Batch Processing with Excel (Spreadsheet Mode)
-
-For researchers working with many files, you can use Excel to organize your work.
-
-1. Create an Excel file (`.xlsx`) with a column named `filename`.
-2. List your PDF filenames in that column.
-3. Place the Excel file in the same folder as your PDFs (e.g., `OCR/PDF/`).
-4. Run the script. It will detect the Excel file and:
-   - Process only the listed files.
-   - Add a new column with the results (text or summary).
-   - Save the Excel file automatically.
-
-This is perfect for creating a database of your sources!
+**Pro Tip:** Save your API key in Colab Secrets (🔑 icon in sidebar) for automatic loading across sessions!
 
 ---
 
@@ -162,3 +98,9 @@ This project uses AI services that are subject to their respective terms of serv
 ---
 
 **Happy Processing! 🎉**
+Image Quality:** For OCR/HTR, use high-resolution scans (300+ DPI recommended). The notebook uses Gemini's high-resolution mode automatically.
+- **Handwriting:** HTR works best with clear handwriting. Use specialized prompts (French, Arabic, Multilingual) for better accuracy.
+- **Enter your API key in the notebook or save it in Colab Secrets (🔑 icon in left sidebar) with name `GEMINI_API_KEY`.
+- **"File not uploaded":** Click the upload button and select your files. Supported formats: PDF, JPG, PNG, WEBP, HEIC.
+- **Slow Processing:** Large files take time. Gemini 2.5 Flash is faster but Gemini 3 Pro gives higher quality for complex handwriting.
+- **Poor OCR Results:** Try using the specialized HTR prompts (French, Arabic, Multilingual) if working with handwritten document
