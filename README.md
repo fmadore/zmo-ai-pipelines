@@ -6,9 +6,9 @@ A collection of easy-to-use AI tools designed for researchers and social scienti
 
 We have created **Google Colab notebooks** that run entirely in your browser. You don't need to install anything on your computer.
 
-**1. Audio Transcription**  
-Convert interviews, meetings, and lectures into text.  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio-transcription/Audio_Transcription_Colab.ipynb)
+**1. Audio & Video Transcription**  
+Convert audio and video files (interviews, meetings, lectures) into text.  
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio_Transcription_Colab.ipynb)
 
 **2. OCR/HTR (Printed & Handwritten Text)**  
 Extract text from PDFs and images - works with both printed and handwritten documents!  
@@ -31,12 +31,15 @@ Generate summaries and keywords from your texts.
 
 ## 🎯 What Can These Tools Do?
 
-### 📝 Audio Transcription
+### 📝 Audio & Video Transcription
 Perfect for qualitative research:
-- **Interviews:** Transcribe one-on-one interviews with speaker labels.
-- **Focus Groups:** Identify different speakers (best with clear audio).
-- **Lectures:** Create structured notes from recordings.
-- **Meetings:** Generate minutes and action items.
+- **Audio formats:** MP3, WAV, M4A, FLAC, OGG, WEBM, AAC
+- **Video formats:** MP4, MOV, AVI, MKV, WEBM
+- **Interviews:** Transcribe one-on-one interviews with speaker labels
+- **Focus Groups:** Identify different speakers (best with clear audio)
+- **Lectures:** Create structured notes from recordings
+- **Meetings:** Generate minutes and action items
+- **Video content:** Extract speech from video files automatically
 
 ### 📄 OCR/HTR (Optical & Handwritten Text Recognition)
 Digitize your archives - both printed and handwritten:
@@ -69,7 +72,9 @@ All notebooks run in **Google Colab**, which provides:
 
 ## 💡 Tips for Researchers
 
-- **Audio Quality:** The better the recording, the better the transcript. Try to minimize background noise.
+- **Audio/Video Quality:** The better the recording, the better the transcript. Try to minimize background noise.
+- **Image Quality:** For OCR/HTR, use high-resolution scans (300+ DPI recommended). The notebook uses Gemini's high-resolution mode automatically.
+- **Handwriting:** HTR works best with clear handwriting. Use specialized prompts (French, Arabic, Multilingual) for better accuracy.
 - **Privacy:** Your data is sent to Google's servers for processing but is not used to train their public models (when using the paid API or specific enterprise settings). Always check the latest privacy terms if working with sensitive data.
 - **Verification:** AI is powerful but not perfect. Always review the transcripts and OCR results, especially for critical quotes or names.
 
@@ -77,9 +82,15 @@ All notebooks run in **Google Colab**, which provides:
 
 ## ❓ Troubleshooting
 
-- **"API Key not found":** Make sure your `.env` file is named exactly `.env` (not `.env.txt`) and contains your key.
-- **"File not found":** Ensure your files are in the correct input folders (e.g., `Audio-transcription/Audio/`).
-- **Slow Processing:** Large files take time. The "Flash" models are faster but slightly less accurate than "Pro" models.
+**Audio/Video Transcription:**
+- **"API Key not valid":** Make sure you copied the entire API key or add `GEMINI_API_KEY` to Colab Secrets
+- **"File not uploaded":** Click the upload button and select your files. Supported: MP3, WAV, M4A, FLAC, OGG, WEBM, AAC (audio) and MP4, MOV, AVI, MKV, WEBM (video)
+- **Slow Processing:** Large files take time. Gemini 2.5 Flash is faster but Gemini 3 Pro gives higher quality
+
+**OCR/HTR:**
+- **"File not uploaded":** Click the upload button and select your files. Supported: PDF, JPG, PNG, WEBP, HEIC
+- **Slow Processing:** Gemini 2.5 Flash is faster but Gemini 3 Pro gives higher quality for complex handwriting
+- **Poor Results:** Try using the specialized HTR prompts (French, Arabic, Multilingual) if working with handwritten documents
 
 ---
 
@@ -98,9 +109,3 @@ This project uses AI services that are subject to their respective terms of serv
 ---
 
 **Happy Processing! 🎉**
-Image Quality:** For OCR/HTR, use high-resolution scans (300+ DPI recommended). The notebook uses Gemini's high-resolution mode automatically.
-- **Handwriting:** HTR works best with clear handwriting. Use specialized prompts (French, Arabic, Multilingual) for better accuracy.
-- **Enter your API key in the notebook or save it in Colab Secrets (🔑 icon in left sidebar) with name `GEMINI_API_KEY`.
-- **"File not uploaded":** Click the upload button and select your files. Supported formats: PDF, JPG, PNG, WEBP, HEIC.
-- **Slow Processing:** Large files take time. Gemini 2.5 Flash is faster but Gemini 3 Pro gives higher quality for complex handwriting.
-- **Poor OCR Results:** Try using the specialized HTR prompts (French, Arabic, Multilingual) if working with handwritten document
