@@ -32,7 +32,7 @@ except Exception:  # pragma: no cover
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 load_dotenv()
 
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3-flash-preview"
 OPENAI_MODEL = "gpt-5-mini"
 PROVIDER_OPENAI = "openai"
 PROVIDER_GEMINI = "gemini"
@@ -133,7 +133,12 @@ def generate_summary_gemini(client, text: str) -> Optional[str]:
         return None
     prompt = PROMPT_TEMPLATE.format(text=text)
     try:
-        gen_config = types.GenerateContentConfig(temperature=0.2)
+        # Configure thinking for Gemini 3 Flash
+        thinking_config = types.ThinkingConfig(thinking_level="MINIMAL")
+        gen_config = types.GenerateContentConfig(
+            temperature=0.2,
+            thinking_config=thinking_config
+        )
         response = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,

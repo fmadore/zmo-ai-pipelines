@@ -85,11 +85,11 @@ All notebooks run in **Google Colab**, which provides:
 **Audio/Video Transcription:**
 - **"API Key not valid":** Make sure you copied the entire API key or add `GEMINI_API_KEY` to Colab Secrets
 - **"File not uploaded":** Click the upload button and select your files. Supported: MP3, WAV, M4A, FLAC, OGG, WEBM, AAC (audio) and MP4, MOV, AVI, MKV, WEBM (video)
-- **Slow Processing:** Large files take time. Gemini 2.5 Flash is faster but Gemini 3 Pro gives higher quality
+- **Slow Processing:** Large files take time. Gemini 3 Flash is faster but Gemini 3 Pro gives higher quality
 
 **OCR/HTR:**
 - **"File not uploaded":** Click the upload button and select your files. Supported: PDF, JPG, PNG, WEBP, HEIC
-- **Slow Processing:** Gemini 2.5 Flash is faster but Gemini 3 Pro gives higher quality for complex handwriting
+- **Slow Processing:** Gemini 3 Flash is faster but Gemini 3 Pro gives higher quality for complex handwriting
 - **Poor Results:** Try using the specialized HTR prompts (French, Arabic, Multilingual) if working with handwritten documents
 
 ---

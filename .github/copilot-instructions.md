@@ -39,7 +39,11 @@ import google.generativeai as genai
 model = genai.GenerativeModel('gemini-pro')
 ```
 
-**Models (preference order):** `gemini-3-pro-preview` → `gemini-2.5-flash`
+**Models (preference order):** `gemini-3-pro-preview` → `gemini-3-flash-preview`
+
+**Thinking levels:**
+- **Pro:** `low`, `high`
+- **Flash:** `MINIMAL`, `low`, `medium`, `high`
 
 ---
 
