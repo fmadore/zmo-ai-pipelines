@@ -134,7 +134,7 @@ def generate_summary_gemini(client, text: str) -> Optional[str]:
     prompt = PROMPT_TEMPLATE.format(text=text)
     try:
         # Configure thinking for Gemini 3 Flash
-        thinking_config = types.ThinkingConfig(thinking_level="MINIMAL")
+        thinking_config = types.ThinkingConfig(thinking_level="minimal")
         gen_config = types.GenerateContentConfig(
             temperature=0.2,
             thinking_config=thinking_config
