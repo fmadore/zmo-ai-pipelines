@@ -22,10 +22,13 @@ Generate summaries and keywords from your texts.
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary/Summary_Colab.ipynb)
 
 **How to use:**
-1. Click one of the "Open in Colab" badges above.
-2. Sign in with your Google account.
-3. Follow the simple step-by-step instructions in the notebook.
-4. You will need a free [Gemini API key](https://aistudio.google.com/apikey).
+1. Click one of the "Open in Colab" badges above
+2. Sign in with your Google account
+3. Get a free [Gemini API key](https://aistudio.google.com/api-keys)
+4. **Recommended:** Connect Google Drive (Step 2.5) to:
+   - Load files directly from your Drive
+   - Auto-save results to Drive (survives browser disconnection!)
+5. Follow the step-by-step instructions in each notebook
 
 ---
 
@@ -66,15 +69,32 @@ All notebooks run in **Google Colab**, which provides:
 - ✅ **Secure:** API keys can be stored in Colab Secrets
 - ✅ **Always Updated:** Latest Gemini AI features
 
-**Pro Tip:** Save your API key in Colab Secrets (🔑 icon in sidebar) for automatic loading across sessions!
+### ☁️ Google Drive Integration (Recommended)
+
+Both the **Audio Transcription** and **OCR/HTR** notebooks support **Google Drive integration**:
+
+| Feature | Benefit |
+|---------|--------|
+| 📂 **Load from Drive** | No need to re-upload files each session |
+| 💾 **Auto-save to Drive** | Results saved automatically—never lose work if disconnected! |
+| 🔄 **Persistent storage** | Access your files and results across sessions |
+| 📁 **Visual file browser** | Navigate your Drive folders with ipyfilechooser |
+
+**How to enable:** Run Step 2.5 in either notebook and click "☁️ Connect Google Drive"
+
+**Pro Tips:**
+- Save your API key in Colab Secrets (🔑 icon in sidebar) for automatic loading
+- Connect Google Drive to prevent data loss if your browser disconnects
 
 ---
 
 ## 💡 Tips for Researchers
 
+- **Use Google Drive:** Connect your Drive (Step 2.5) to auto-save results and prevent data loss from browser disconnections.
 - **Audio/Video Quality:** The better the recording, the better the transcript. Try to minimize background noise.
 - **Image Quality:** For OCR/HTR, use high-resolution scans (300+ DPI recommended). The notebook uses Gemini's high-resolution mode automatically.
 - **Handwriting:** HTR works best with clear handwriting. Use specialized prompts (French, Arabic, Multilingual) for better accuracy.
+- **Long Sessions:** For processing many files, always connect Google Drive first—results are saved continuously.
 - **Privacy:** Your data is sent to Google's servers for processing but is not used to train their public models (when using the paid API or specific enterprise settings). Always check the latest privacy terms if working with sensitive data.
 - **Verification:** AI is powerful but not perfect. Always review the transcripts and OCR results, especially for critical quotes or names.
 
