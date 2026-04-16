@@ -19,7 +19,7 @@ Extract text from PDFs and images - works with both printed and handwritten docu
 
 **3. Text Summarization**  
 Generate summaries and keywords from your texts.  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary/Summary_Colab.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary_Colab.ipynb)
 
 **How to use:**
 1. Click one of the "Open in Colab" badges above
@@ -105,12 +105,14 @@ Both the **Audio Transcription** and **OCR/HTR** notebooks support **Google Driv
 **Audio/Video Transcription:**
 - **"API Key not valid":** Make sure you copied the entire API key or add `GEMINI_API_KEY` to Colab Secrets
 - **"File not uploaded":** Click the upload button and select your files. Supported: MP3, WAV, M4A, FLAC, OGG, WEBM, AAC (audio) and MP4, MOV, AVI, MKV, WEBM (video)
-- **Slow Processing:** Large files take time. Gemini 3 Flash is faster and cheaper, while Gemini 3.1 Pro gives higher quality
+- **Slow Processing:** Large files take time. `gemini-flash-latest` is faster and cheaper, while `gemini-pro-latest` gives higher quality
+- **Rate-limit errors (429):** The notebooks auto-retry on 429/5xx with exponential backoff. If it still fails, wait a few minutes or check your quota
 
 **OCR/HTR:**
 - **"File not uploaded":** Click the upload button and select your files. Supported: PDF, JPG, PNG, WEBP, HEIC
-- **Slow Processing:** Gemini 3 Flash is faster but Gemini 3 Pro gives higher quality for complex handwriting
+- **Slow Processing:** `gemini-flash-latest` is faster but `gemini-pro-latest` gives higher quality for complex handwriting
 - **Poor Results:** Try using the specialized HTR prompts (French, Arabic, Multilingual) if working with handwritten documents
+- **Large pages:** PDF pages > 15 MB are sent via the Files API automatically (no action needed)
 
 ---
 
