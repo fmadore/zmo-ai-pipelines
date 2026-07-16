@@ -24,7 +24,7 @@ Generate summaries and keywords from your texts.
 **How to use:**
 1. Click one of the "Open in Colab" badges above
 2. Sign in with your Google account
-3. Get a free [Gemini API key](https://aistudio.google.com/api-keys)
+3. Get a free [Gemini API key](https://aistudio.google.com/apikey)
 4. **Recommended:** Connect Google Drive (Step 2.5) to:
    - Load files directly from your Drive
    - Auto-save results to Drive (survives browser disconnection!)
@@ -55,8 +55,9 @@ Digitize your archives - both printed and handwritten:
 ### 📊 Text Summarization
 Analyze large amounts of text:
 - Generate concise summaries of long documents.
-- Automatically extract keywords for tagging and organization.
+- Automatically extract keywords for tagging and organization — returned as structured JSON for reliable parsing.
 - Process hundreds of documents at once using Excel sheets.
+- Choose between Flash, Flash-Lite (fastest/cheapest), and Pro models.
 
 ---
 
@@ -64,7 +65,7 @@ Analyze large amounts of text:
 
 All notebooks run in **Google Colab**, which provides:
 - ✅ **No Installation:** Everything runs in your browser
-- ✅ **Free GPU Access:** Faster processing for large files
+- ✅ **Free to Use:** Colab's free tier is all you need — the AI itself runs on Google's servers
 - ✅ **Easy Sharing:** Share notebooks with colleagues
 - ✅ **Secure:** API keys can be stored in Colab Secrets
 - ✅ **Always Updated:** Latest Gemini AI features
@@ -90,6 +91,7 @@ Both the **Audio Transcription** and **OCR/HTR** notebooks support **Google Driv
 
 ## 💡 Tips for Researchers
 
+- **Models:** The notebooks use Google's `gemini-flash-latest` / `gemini-pro-latest` aliases, which always point to the newest Gemini releases (Gemini 3.5 Flash and Gemini 3.1 Pro as of July 2026) — no notebook updates needed when Google ships new models.
 - **Use Google Drive:** Connect your Drive (Step 2.5) to auto-save results and prevent data loss from browser disconnections.
 - **Audio/Video Quality:** The better the recording, the better the transcript. Try to minimize background noise.
 - **Image Quality:** For OCR/HTR, use high-resolution scans (300+ DPI recommended). The notebook uses Gemini's high-resolution mode automatically.
@@ -106,7 +108,7 @@ Both the **Audio Transcription** and **OCR/HTR** notebooks support **Google Driv
 - **"API Key not valid":** Make sure you copied the entire API key or add `GEMINI_API_KEY` to Colab Secrets
 - **"File not uploaded":** Click the upload button and select your files. Supported: MP3, WAV, M4A, FLAC, OGG, WEBM, AAC (audio) and MP4, MOV, AVI, MKV, WEBM (video)
 - **Slow Processing:** Large files take time. `gemini-flash-latest` is faster and cheaper, while `gemini-pro-latest` gives higher quality
-- **Rate-limit errors (429):** The notebooks auto-retry on 429/5xx with exponential backoff. If it still fails, wait a few minutes or check your quota
+- **Rate-limit errors (429):** The notebooks auto-retry on transient errors (408/429/5xx) with exponential backoff. If it still fails, wait a few minutes or check your quota
 
 **OCR/HTR:**
 - **"File not uploaded":** Click the upload button and select your files. Supported: PDF, JPG, PNG, WEBP, HEIC
