@@ -60,15 +60,16 @@ MODEL_FLASH = "gemini-flash-latest"
 MODEL_FLASH_LITE = "gemini-flash-lite-latest"
 
 MODEL_CHOICES = [
-    ("Best quality — slower, costs more  (gemini-pro-latest)", MODEL_PRO),
-    ("Faster and cheaper  (gemini-flash-latest)", MODEL_FLASH),
-    ("Fastest and cheapest — simple material only  (gemini-flash-lite-latest)",
+    ("Balanced — the default, works on the free tier  (gemini-flash-latest)", MODEL_FLASH),
+    ("Cheapest and fastest — simple material only  (gemini-flash-lite-latest)",
      MODEL_FLASH_LITE),
+    ("Best quality — REQUIRES BILLING, not on the free tier  (gemini-pro-latest)",
+     MODEL_PRO),
 ]
 
-#: Where to land if a chosen alias turns out not to exist. Only
-#: ``gemini-flash-latest`` is named outright in Google's model documentation,
-#: so the other two are treated as best-effort.
+#: Where to land if a chosen alias turns out not to exist. Flash is the safe
+#: harbour: it is the alias Google documents by name, and unlike Pro it is
+#: available on the free tier.
 MODEL_FALLBACK = MODEL_FLASH
 
 #: Archival material routinely contains violent, racist or sexual content that
@@ -569,7 +570,9 @@ def friendly_api_error(exc) -> str:
     hints = {
         400: "Invalid request (check the file format or prompt length).",
         401: "Unauthorized — is your API key correct and still valid?",
-        403: "Access denied or quota issue — check billing and API access.",
+        403: "Access denied. If you picked the 'Best quality' model, note that it is "
+             "not available on the free tier — switch to one of the other two, or "
+             "enable billing on your Google Cloud project.",
         404: "Model not found — the alias may have been retired. Pick a different "
              "model in the settings step and try again.",
         429: "Rate limit hit even after retries — wait a few minutes, or reduce "

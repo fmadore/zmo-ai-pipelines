@@ -110,15 +110,22 @@ Text files from the OCR notebook can be fed straight into the summary notebook.
 - **Scan quality beats every setting.** 300 DPI or more for OCR.
 - **Choose the model to match the material.** Each notebook offers three:
 
-  | Model | Good for | Avoid for |
-  |---|---|---|
-  | Best quality (`gemini-pro-latest`) | Handwriting, faded ink, several speakers, strong accents, non-Latin scripts | Nothing — just slower and dearer |
-  | Faster and cheaper (`gemini-flash-latest`) | Clean printed text, clear recordings — a sensible default | Difficult handwriting |
-  | Fastest and cheapest (`gemini-flash-lite-latest`) | Bulk summarising; clean modern print | Handwriting, historical scans, noisy audio |
+  | Model | Free tier? | Cost per 1M tokens (in / out) | Good for |
+  |---|---|---|---|
+  | **Balanced** — `gemini-flash-latest` *(default)* | ✅ yes | $1.50 / $7.50 | Clean printed text, clear recordings |
+  | **Cheapest** — `gemini-flash-lite-latest` | ✅ yes | $0.30 / $2.50 | Bulk summarising; clean modern print |
+  | **Best quality** — `gemini-pro-latest` | ❌ **no** | $2.00 / $12.00 | Handwriting, faded ink, several speakers, strong accents, non-Latin scripts |
+
+  *Prices as of July 2026 — check [current pricing](https://ai.google.dev/gemini-api/docs/pricing).*
+
+  **The best-quality model is not on the free tier at all.** A free API key will be
+  refused if you select it. Enable billing on your Google Cloud project first, or stay on
+  the other two.
 
   Flash-Lite earns its place on summarising, where the job is easier and the volume is
-  higher. Test it on twenty rows against Flash before turning it loose on a whole
-  spreadsheet.
+  higher — five times cheaper on input than Flash. Test it on twenty rows against Flash
+  before turning it loose on a whole spreadsheet. For handwriting or difficult audio it is
+  a false economy.
 - **Verbatim is a methodological choice.** The default transcription style tidies text up:
   hesitations removed, numbers standardised. If your method needs every "um", pick *Strict
   verbatim*.
@@ -176,12 +183,15 @@ Two deliberate choices worth knowing about:
   July 2026, and the Gemini 3 guide warns that lowering temperature can cause looping or
   degraded output — the worst possible failure for a long transcription.
 - **Model IDs are the `-latest` aliases**, never pinned version numbers. Google
-  hot-swaps them as new models ship, so the notebooks follow along without edits. The
-  trade-off is that an alias can be repointed — or retired — under you, so every run does
-  one `models.get()` first and prints what the alias actually resolved to. If it no longer
-  exists, the run falls back to `gemini-flash-latest` with a warning rather than dying on
-  a bare 404. That matters most for `gemini-flash-lite-latest`, which is the one alias
-  Google's model documentation does not name outright.
+  hot-swaps them as new models ship, so the notebooks follow along without edits — as of
+  July 2026 `gemini-flash-latest` already points at Gemini 3.6 Flash, which shipped after
+  this code was written. The trade-off is that an alias can be repointed, or retired,
+  under you. So every run does one `models.get()` first and prints what the alias actually
+  resolved to; if it no longer exists, the run falls back to `gemini-flash-latest` with a
+  warning rather than dying on a bare 404.
+- **The default is Flash, not Pro.** Pro is not offered on the free tier, and the whole
+  onboarding path in this README hands people a free key. Defaulting to a model they
+  cannot use would fail them on their first run.
 
 ---
 
