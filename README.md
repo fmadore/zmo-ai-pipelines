@@ -94,6 +94,8 @@ Step 2.5 in each notebook. It is worth the extra click:
 - Plain text files, or a whole spreadsheet column
 - Adds **Summary** and **Keywords** columns; your original columns are untouched
 - Pick which column holds your text — it does not have to be called `OCR`
+- Results come back as structured JSON, so the split between summary and keywords does not
+  depend on the model formatting its reply just so
 - Saves every few rows, and **an interrupted run continues where it stopped** instead of
   paying for the same rows twice
 

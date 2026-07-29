@@ -41,8 +41,9 @@ __version__ = "2026.07.29"
 # Constants
 # --------------------------------------------------------------------------
 
-#: HTTP statuses the SDK should retry automatically.
-RETRY_STATUS_CODES = [429, 500, 502, 503, 504]
+#: HTTP statuses the SDK should retry automatically. 408 is a request timeout,
+#: which is as transient as a 503 and worth retrying too.
+RETRY_STATUS_CODES = [408, 429, 500, 502, 503, 504]
 
 #: The API caps a whole request at 20 MB. Anything above this threshold goes
 #: through the Files API instead of being inlined, leaving room for the prompt.
@@ -665,6 +666,7 @@ def build_config(
     media_resolution=None,
     max_output_tokens: int = MAX_OUTPUT_TOKENS,
     response_mime_type: str = "text/plain",
+    response_schema=None,
     safety: bool = True,
 ) -> types.GenerateContentConfig:
     """Build a GenerateContentConfig.
@@ -672,14 +674,20 @@ def build_config(
     Note the absence of ``temperature``, ``top_p`` and ``top_k``: they are
     deprecated, and Google explicitly recommends leaving temperature at its
     default on Gemini 3 models.
+
+    Passing ``response_schema`` switches the reply to JSON matching that
+    schema, which is far more dependable than asking for a particular text
+    layout and then parsing it back out.
     """
     params = {
         "max_output_tokens": max_output_tokens,
-        "response_mime_type": response_mime_type,
+        "response_mime_type": "application/json" if response_schema else response_mime_type,
         "thinking_config": types.ThinkingConfig(
             thinking_level=thinking_level or default_thinking_level(model_id)
         ),
     }
+    if response_schema is not None:
+        params["response_schema"] = response_schema
     if system_instruction:
         params["system_instruction"] = system_instruction
     if media_resolution is not None:
