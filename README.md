@@ -108,9 +108,17 @@ Text files from the OCR notebook can be fed straight into the summary notebook.
 - **Try a small batch first.** Three pages, or one short recording. Check the output before
   committing to a long job.
 - **Scan quality beats every setting.** 300 DPI or more for OCR.
-- **Choose the model to match the material.** Best-quality for handwriting, difficult
-  audio, or several speakers; faster-and-cheaper for clean printed text and clear
-  recordings.
+- **Choose the model to match the material.** Each notebook offers three:
+
+  | Model | Good for | Avoid for |
+  |---|---|---|
+  | Best quality (`gemini-pro-latest`) | Handwriting, faded ink, several speakers, strong accents, non-Latin scripts | Nothing — just slower and dearer |
+  | Faster and cheaper (`gemini-flash-latest`) | Clean printed text, clear recordings — a sensible default | Difficult handwriting |
+  | Fastest and cheapest (`gemini-flash-lite-latest`) | Bulk summarising; clean modern print | Handwriting, historical scans, noisy audio |
+
+  Flash-Lite earns its place on summarising, where the job is easier and the volume is
+  higher. Test it on twenty rows against Flash before turning it loose on a whole
+  spreadsheet.
 - **Verbatim is a methodological choice.** The default transcription style tidies text up:
   hesitations removed, numbers standardised. If your method needs every "um", pick *Strict
   verbatim*.
@@ -167,10 +175,13 @@ Two deliberate choices worth knowing about:
 - **No `temperature`, `top_p` or `top_k`.** Google deprecated these sampling parameters in
   July 2026, and the Gemini 3 guide warns that lowering temperature can cause looping or
   degraded output — the worst possible failure for a long transcription.
-- **Model IDs are the `-latest` aliases.** `gemini-pro-latest` and `gemini-flash-latest`
-  are hot-swapped by Google as new models ship, so the notebooks follow along without
-  edits. The trade-off is that an alias can be repointed at a model with different
-  behaviour; each run prints what the alias actually resolved to.
+- **Model IDs are the `-latest` aliases**, never pinned version numbers. Google
+  hot-swaps them as new models ship, so the notebooks follow along without edits. The
+  trade-off is that an alias can be repointed — or retired — under you, so every run does
+  one `models.get()` first and prints what the alias actually resolved to. If it no longer
+  exists, the run falls back to `gemini-flash-latest` with a warning rather than dying on
+  a bare 404. That matters most for `gemini-flash-lite-latest`, which is the one alias
+  Google's model documentation does not name outright.
 
 ---
 

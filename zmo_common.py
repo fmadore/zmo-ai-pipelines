@@ -57,11 +57,19 @@ MAX_OUTPUT_TOKENS = 65536
 #: current Pro and Flash models without anyone editing this file.
 MODEL_PRO = "gemini-pro-latest"
 MODEL_FLASH = "gemini-flash-latest"
+MODEL_FLASH_LITE = "gemini-flash-lite-latest"
 
 MODEL_CHOICES = [
     ("Best quality — slower, costs more  (gemini-pro-latest)", MODEL_PRO),
     ("Faster and cheaper  (gemini-flash-latest)", MODEL_FLASH),
+    ("Fastest and cheapest — simple material only  (gemini-flash-lite-latest)",
+     MODEL_FLASH_LITE),
 ]
+
+#: Where to land if a chosen alias turns out not to exist. Only
+#: ``gemini-flash-latest`` is named outright in Google's model documentation,
+#: so the other two are treated as best-effort.
+MODEL_FALLBACK = MODEL_FLASH
 
 #: Archival material routinely contains violent, racist or sexual content that
 #: the default filters would refuse to transcribe. Turning the filters off is
@@ -562,8 +570,8 @@ def friendly_api_error(exc) -> str:
         400: "Invalid request (check the file format or prompt length).",
         401: "Unauthorized — is your API key correct and still valid?",
         403: "Access denied or quota issue — check billing and API access.",
-        404: "Model not found — it may have been retired. Re-run the settings step "
-             "to refresh the model list.",
+        404: "Model not found — the alias may have been retired. Pick a different "
+             "model in the settings step and try again.",
         429: "Rate limit hit even after retries — wait a few minutes, or reduce "
              "the number of parallel requests.",
         500: "Google server error — retry shortly.",
@@ -701,26 +709,47 @@ def build_config(
 # Model discovery
 # --------------------------------------------------------------------------
 
-def resolve_model(client, model_id: str):
-    """Check that an alias still resolves, and report what it points at.
-
-    Returns ``(ok, message)``. Aliases are hot-swapped by Google, which is
-    exactly why the notebooks use them — but it also means a run can fail with
-    a bare 404 that a non-specialist has no way to interpret. One cheap lookup
-    before a long job turns that into a sentence they can act on.
-    """
-    try:
-        model = client.models.get(model=model_id)
-    except genai_errors.APIError as exc:
-        return (False, friendly_api_error(exc))
-    except Exception as exc:
-        # Never block a run just because the pre-flight check itself broke.
-        return (True, f"(could not verify {model_id}: {exc})")
-
+def _describe_resolved(model_id, model) -> str:
     version = getattr(model, "version", None) or ""
     display = getattr(model, "display_name", None) or ""
     detail = " → ".join(part for part in [display, version] if part)
-    return (True, f"{model_id}{f' ({detail})' if detail else ''}")
+    return f"{model_id}{f' ({detail})' if detail else ''}"
+
+
+def resolve_model(client, model_id: str, fallback: str = None):
+    """Check that an alias resolves, and report what it points at.
+
+    Returns ``(model_to_use, message)``, where ``model_to_use`` is ``None`` if
+    nothing usable was found. Callers should use the returned id rather than
+    the one they asked for.
+
+    Aliases are hot-swapped by Google, which is exactly why the notebooks use
+    them — but it also means a run can fail with a bare 404 that a
+    non-specialist has no way to interpret. One cheap lookup before a long job
+    turns that into a sentence they can act on, and ``fallback`` lets the run
+    proceed on a model that does exist instead of dead-ending.
+    """
+    try:
+        return (model_id, _describe_resolved(model_id, client.models.get(model=model_id)))
+    except genai_errors.APIError as exc:
+        first_error = friendly_api_error(exc)
+    except Exception as exc:
+        # Never block a run just because the pre-flight check itself broke.
+        return (model_id, f"{model_id} (could not verify: {exc})")
+
+    if not fallback or fallback == model_id:
+        return (None, first_error)
+
+    try:
+        model = client.models.get(model=fallback)
+    except Exception:
+        return (None, first_error)
+
+    return (
+        fallback,
+        f"⚠️ '{model_id}' is not available on this key, so this run will use "
+        f"'{fallback}' instead.\n   {_describe_resolved(fallback, model)}",
+    )
 
 
 # --------------------------------------------------------------------------
