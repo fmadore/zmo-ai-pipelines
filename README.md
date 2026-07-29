@@ -1,133 +1,182 @@
 # ZMO AI Pipelines
 
-A collection of easy-to-use AI tools designed for researchers and social scientists. These tools use Google's Gemini AI to automatically transcribe audio, extract text from documents (OCR/HTR), and generate summaries.
+Three Google Colab notebooks that use Google's Gemini to transcribe recordings, read text
+off scans, and summarise documents. Built for researchers, not programmers — everything
+runs in a browser tab, and there is nothing to install.
 
-## ☁️ Easiest Way to Use (No Installation Required!)
-
-We have created **Google Colab notebooks** that run entirely in your browser. You don't need to install anything on your computer.
-
-**1. Audio & Video Transcription**  
-Convert audio and video files (interviews, meetings, lectures) into text.  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio_Transcription_Colab.ipynb)
-
-**2. OCR/HTR (Printed & Handwritten Text)**  
-Extract text from PDFs and images - works with both printed and handwritten documents!  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR_HTR_Colab.ipynb)
-- **OCR:** Printed documents, books, newspapers
-- **HTR:** Handwritten manuscripts (French, Arabic, Multilingual)
-- **Formats:** PDF, JPG, PNG, WEBP, HEIC
-
-**3. Text Summarization**  
-Generate summaries and keywords from your texts.  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary_Colab.ipynb)
-
-**How to use:**
-1. Click one of the "Open in Colab" badges above
-2. Sign in with your Google account
-3. Get a free [Gemini API key](https://aistudio.google.com/api-keys)
-4. **Recommended:** Connect Google Drive (Step 2.5) to:
-   - Load files directly from your Drive
-   - Auto-save results to Drive (survives browser disconnection!)
-5. Follow the step-by-step instructions in each notebook
+| Notebook | What it does | Open |
+|---|---|---|
+| **Audio & video transcription** | Interviews, focus groups, lectures, meetings → text | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio_Transcription_Colab.ipynb) |
+| **OCR / HTR** | Scanned PDFs and photographs → text, printed or handwritten | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR_HTR_Colab.ipynb) |
+| **Summaries & keywords** | Long texts or whole spreadsheets → summaries and keywords | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary_Colab.ipynb) |
 
 ---
 
-## 🎯 What Can These Tools Do?
+## ⚠️ Read this before uploading research material
 
-### 📝 Audio & Video Transcription
-Perfect for qualitative research:
-- **Audio formats:** MP3, WAV, M4A, FLAC, OGG, WEBM, AAC
-- **Video formats:** MP4, MOV, AVI, MKV, WEBM
-- **Interviews:** Transcribe one-on-one interviews with speaker labels
-- **Focus Groups:** Identify different speakers (best with clear audio)
-- **Lectures:** Create structured notes from recordings
-- **Meetings:** Generate minutes and action items
-- **Video content:** Extract speech from video files automatically
+On the **free** Gemini tier, [Google's API terms](https://ai.google.dev/gemini-api/terms)
+state that Google uses what you send to improve its products, and that *"human reviewers
+may read, annotate, and process your API input and output."*
 
-### 📄 OCR/HTR (Optical & Handwritten Text Recognition)
-Digitize your archives - both printed and handwritten:
-- **OCR:** Extract text from scanned PDFs, images, books, and newspapers.
-- **HTR:** Transcribe handwritten letters, manuscripts, and field notes.
-- **Languages:** Works with any language - specialized prompts for French and Arabic handwriting.
-- **Formats:** Supports PDF files and images (JPG, PNG, WEBP, HEIC).
-- **High Resolution:** Uses Gemini's high-resolution mode for optimal accuracy.
+On the **paid** tier — billing enabled on your Google Cloud project — Google does not use
+your prompts or responses to improve its products.
 
-### 📊 Text Summarization
-Analyze large amounts of text:
-- Generate concise summaries of long documents.
-- Automatically extract keywords for tagging and organization.
-- Process hundreds of documents at once using Excel sheets.
+If your recordings, documents or transcripts are covered by an ethics approval, a consent
+form, an archive agreement or a data-protection undertaking, check whether free-tier
+handling is compatible with it **before** you upload anything. For interview data the
+usual answer is to enable billing first.
 
 ---
 
-## 💻 Why Use Google Colab?
+## Getting started
 
-All notebooks run in **Google Colab**, which provides:
-- ✅ **No Installation:** Everything runs in your browser
-- ✅ **Free GPU Access:** Faster processing for large files
-- ✅ **Easy Sharing:** Share notebooks with colleagues
-- ✅ **Secure:** API keys can be stored in Colab Secrets
-- ✅ **Always Updated:** Latest Gemini AI features
+1. Click one of the **Open in Colab** badges above.
+2. Sign in with your Google account.
+3. Get a free API key at **[aistudio.google.com/apikey](https://aistudio.google.com/apikey)**.
+4. Store it in **Colab Secrets** (see below) — this takes a minute, once, and then every
+   notebook you open picks it up automatically.
+5. Run the steps in the notebook from top to bottom.
 
-### ☁️ Google Drive Integration (Recommended)
+### Storing your key in Colab Secrets
 
-Both the **Audio Transcription** and **OCR/HTR** notebooks support **Google Drive integration**:
+1. Click the 🔑 **Secrets** icon in the left sidebar of Colab
+2. **+ Add new secret**
+3. Name: `GEMINI_API_KEY`
+4. Value: your key
+5. Switch **Notebook access** ON
 
-| Feature | Benefit |
-|---------|--------|
-| 📂 **Load from Drive** | No need to re-upload files each session |
-| 💾 **Auto-save to Drive** | Results saved automatically—never lose work if disconnected! |
-| 🔄 **Persistent storage** | Access your files and results across sessions |
-| 📁 **Visual file browser** | Navigate your Drive folders with ipyfilechooser |
+Do this rather than typing the key into the notebook. Colab saves widget contents into the
+notebook file when you save a copy, so a key typed into a box can travel with the file to
+Drive or GitHub. A secret never touches the notebook.
 
-**How to enable:** Run Step 2.5 in either notebook and click "☁️ Connect Google Drive"
+> **Keys created before 2026 are being retired.** Google now rejects unrestricted
+> old-style keys, and will reject all of them from **September 2026**. Any key you create
+> today is the new kind. If a key that used to work suddenly stops, make a fresh one.
 
-**Pro Tips:**
-- Save your API key in Colab Secrets (🔑 icon in sidebar) for automatic loading
-- Connect Google Drive to prevent data loss if your browser disconnects
+### Connect Google Drive (recommended)
 
----
+Step 2.5 in each notebook. It is worth the extra click:
 
-## 💡 Tips for Researchers
-
-- **Use Google Drive:** Connect your Drive (Step 2.5) to auto-save results and prevent data loss from browser disconnections.
-- **Audio/Video Quality:** The better the recording, the better the transcript. Try to minimize background noise.
-- **Image Quality:** For OCR/HTR, use high-resolution scans (300+ DPI recommended). The notebook uses Gemini's high-resolution mode automatically.
-- **Handwriting:** HTR works best with clear handwriting. Use specialized prompts (French, Arabic, Multilingual) for better accuracy.
-- **Long Sessions:** For processing many files, always connect Google Drive first—results are saved continuously.
-- **Privacy:** Your data is sent to Google's servers for processing but is not used to train their public models (when using the paid API or specific enterprise settings). Always check the latest privacy terms if working with sensitive data.
-- **Verification:** AI is powerful but not perfect. Always review the transcripts and OCR results, especially for critical quotes or names.
+- Load large files straight from Drive instead of uploading them through the browser
+- **Results are written as they are produced** — each page, each segment, every few
+  spreadsheet rows. If your browser disconnects halfway through a long job, the finished
+  work is already saved.
 
 ---
 
-## ❓ Troubleshooting
+## What each notebook does
 
-**Audio/Video Transcription:**
-- **"API Key not valid":** Make sure you copied the entire API key or add `GEMINI_API_KEY` to Colab Secrets
-- **"File not uploaded":** Click the upload button and select your files. Supported: MP3, WAV, M4A, FLAC, OGG, WEBM, AAC (audio) and MP4, MOV, AVI, MKV, WEBM (video)
-- **Slow Processing:** Large files take time. `gemini-flash-latest` is faster and cheaper, while `gemini-pro-latest` gives higher quality
-- **Rate-limit errors (429):** The notebooks auto-retry on 429/5xx with exponential backoff. If it still fails, wait a few minutes or check your quota
+### 🎙️ Audio & video transcription
 
-**OCR/HTR:**
-- **"File not uploaded":** Click the upload button and select your files. Supported: PDF, JPG, PNG, WEBP, HEIC
-- **Slow Processing:** `gemini-flash-latest` is faster but `gemini-pro-latest` gives higher quality for complex handwriting
-- **Poor Results:** Try using the specialized HTR prompts (French, Arabic, Multilingual) if working with handwritten documents
-- **Large pages:** PDF pages > 15 MB are sent via the Files API automatically (no action needed)
+- **Audio:** MP3, WAV, M4A, FLAC, OGG, AAC · **Video:** MP4, MOV, AVI, MKV, WEBM
+- Video files have their soundtrack extracted first, so you are never billed for the
+  picture — a 1 GB video usually becomes about 30 MB of audio.
+- Long recordings are split into segments, and **timestamps are corrected back to their
+  real position in the full recording**. A quotation marked `[00:34:12]` is at 00:34:12 of
+  your original file.
+- Each segment is shown how the previous one ended, so speaker numbering stays consistent
+  across the whole transcript.
+- Seven styles, all editable: clean-read transcription, **strict verbatim** (keeps every
+  hesitation, for conversation and discourse analysis), interview, meeting minutes,
+  lecture notes, Q&A summary, and translation into English.
+
+### 📜 OCR / HTR
+
+- **PDF, JPG, PNG, WEBP, HEIC**
+- Printed text in any language, plus specialised prompts for handwritten French, Arabic,
+  and mixed-script manuscripts
+- Reads at Gemini's highest detail setting; scan at 300 DPI or better
+- Choose a page range — try three pages before committing to a 400-page book
+- Read several pages at once for speed, and every page is saved the moment it is done
+
+### 📊 Summaries & keywords
+
+- Plain text files, or a whole spreadsheet column
+- Adds **Summary** and **Keywords** columns; your original columns are untouched
+- Pick which column holds your text — it does not have to be called `OCR`
+- Saves every few rows, and **an interrupted run continues where it stopped** instead of
+  paying for the same rows twice
+
+Text files from the OCR notebook can be fed straight into the summary notebook.
 
 ---
 
-## 👤 About
+## Tips
 
-**ZMO AI Pipelines** created by [Frédérick Madore](https://www.frederickmadore.com/)
+- **Try a small batch first.** Three pages, or one short recording. Check the output before
+  committing to a long job.
+- **Scan quality beats every setting.** 300 DPI or more for OCR.
+- **Choose the model to match the material.** Best-quality for handwriting, difficult
+  audio, or several speakers; faster-and-cheaper for clean printed text and clear
+  recordings.
+- **Verbatim is a methodological choice.** The default transcription style tidies text up:
+  hesitations removed, numbers standardised. If your method needs every "um", pick *Strict
+  verbatim*.
+- **Always check the output.** These models are good and still wrong sometimes — names,
+  dates and direct quotations especially.
+
+---
+
+## Troubleshooting
+
+**"No API key found"** — add the `GEMINI_API_KEY` secret as described above and switch
+*Notebook access* on, then press *Check Secrets again* in Step 2.
+
+**A key that used to work now fails** — see the note about key retirement above; create a
+new key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+
+**"Could not download the shared helper file"** — Step 1 fetches `zmo_common.py` from this
+repository. Check your connection and run the cell again.
+
+**"hit the output limit and was CUT SHORT"** — one reply was too long. For audio, turn
+splitting on or shorten the segments. For OCR this is rare and the partial text is kept
+and flagged.
+
+**Rate limit errors** — the free tier has limits. The notebooks retry automatically with
+backoff. If they still fail: reduce *Pages at once* to 1 in the OCR notebook, wait a few
+minutes, or enable billing.
+
+**The Google Drive tab says "not connected" after I connected it** — press **Refresh** in
+that tab.
+
+**Uploads fail or stall on a big file** — browser uploads become unreliable above a few
+hundred megabytes. Put the file in Google Drive and load it from the Drive tab instead.
+
+**Only some files downloaded** — browsers block long runs of separate downloads. Use
+**Download all as ZIP**.
+
+---
+
+## For maintainers
+
+`zmo_common.py` holds everything the three notebooks share: the Gemini client and retry
+policy, response handling, the API-key panel, the file picker, Drive mirroring, incremental
+saving, and the audio helpers. Each notebook downloads it in Step 1:
+
+```bash
+wget -q -O zmo_common.py https://raw.githubusercontent.com/fmadore/zmo-ai-pipelines/main/zmo_common.py
+```
+
+A fix therefore lands in all three notebooks at once. It is fetched from `main`, so
+anything pushed there reaches users immediately — including mistakes.
+
+Two deliberate choices worth knowing about:
+
+- **No `temperature`, `top_p` or `top_k`.** Google deprecated these sampling parameters in
+  July 2026, and the Gemini 3 guide warns that lowering temperature can cause looping or
+  degraded output — the worst possible failure for a long transcription.
+- **Model IDs are the `-latest` aliases.** `gemini-pro-latest` and `gemini-flash-latest`
+  are hot-swapped by Google as new models ship, so the notebooks follow along without
+  edits. The trade-off is that an alias can be repointed at a model with different
+  behaviour; each run prints what the alias actually resolved to.
+
+---
+
+## About
+
+**ZMO AI Pipelines**, created by [Frédérick Madore](https://www.frederickmadore.com/).
 
 Part of the [Leibniz-Zentrum Moderner Orient (ZMO)](https://www.zmo.de/en) research tools.
 
----
-
-## 📄 License
-
-This project uses AI services that are subject to their respective terms of service. Make sure your use complies with Google Gemini's usage policies.
-
----
-
-**Happy Processing! 🎉**
+Use of these notebooks is subject to the
+[Gemini API terms](https://ai.google.dev/gemini-api/terms) and Google's usage policies.
