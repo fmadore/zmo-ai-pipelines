@@ -22,11 +22,12 @@ jobs:
           cache: pip
 
       - name: Install exact tested dependencies
-        run: python -m pip install --disable-pip-version-check --editable ".[dev]"
+        run: >-
+          python -m pip install --disable-pip-version-check
+          --constraint requirements-dev.lock --editable ".[dev]"
 
       - name: Lint
         run: ruff check .
 
       - name: Test helper and notebooks
         run: pytest
-

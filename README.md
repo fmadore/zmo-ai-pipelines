@@ -123,10 +123,14 @@ available images on the
 
 ```powershell
 C:/Users/frede/AppData/Local/Programs/Python/Python312/python.exe -m venv .venv
-.venv/Scripts/python.exe -m pip install --editable ".[dev]"
+.venv/Scripts/python.exe -m pip install --constraint requirements-dev.lock --editable ".[dev]"
 .venv/Scripts/ruff.exe check .
 .venv/Scripts/python.exe -m pytest
 ```
+
+CI additionally constrains the complete tested dependency graph with
+`requirements-dev.lock`; direct notebook packages remain explicitly pinned in
+their setup cells.
 
 CI repeats lint, helper tests, notebook JSON/Python validation, helper-call
 contract validation, pin/hash checks, workbook round-trips, MIME regressions,

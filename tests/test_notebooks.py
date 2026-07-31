@@ -4,6 +4,7 @@ import ast
 import hashlib
 import json
 import re
+import tomllib
 from copy import copy
 from pathlib import Path
 from types import SimpleNamespace
@@ -203,3 +204,13 @@ def test_summary_uses_openpyxl_and_batch_without_flattening():
     assert "client.batches.create" in code
     assert "AI Status" in code
     assert "minItems" in code and "maxItems" in code
+
+
+def test_constraints_lock_covers_all_direct_dependencies():
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    direct = project["project"]["dependencies"] + project["project"]["optional-dependencies"]["dev"]
+    locked = (ROOT / "requirements-dev.lock").read_text(encoding="utf-8").casefold()
+    for requirement in direct:
+        package = re.split(r"[=<>!~ ;\[]", requirement, maxsplit=1)[0]
+        normalized = package.casefold().replace("_", "-")
+        assert f"{normalized}==" in locked, f"{package} is missing from requirements-dev.lock"

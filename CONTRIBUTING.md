@@ -5,6 +5,7 @@
 Install the exact development environment and run both checks before every commit:
 
 ```powershell
+.venv/Scripts/python.exe -m pip install --constraint requirements-dev.lock --editable ".[dev]"
 .venv/Scripts/ruff.exe check .
 .venv/Scripts/python.exe -m pytest
 ```
@@ -16,8 +17,9 @@ or `.provenance.json` files containing information about real sources.
 
 Training data and cached examples are not version sources. Verify every proposed
 pin against the upstream registry, update `pyproject.toml` and the relevant `%pip`
-cell together, rebuild the virtual environment, and run the full suite. Record
-behavioral changes in `CHANGELOG.md`.
+cell together, resolve `requirements-dev.lock` from a clean Python 3.12 environment,
+rebuild using that constraint, and run the full suite. Record behavioral changes
+in `CHANGELOG.md`.
 
 ## Helper/notebook release sequence
 
@@ -48,4 +50,3 @@ prior model in release history.
 - Test a temporary workbook round-trip when touching Summary.
 - Test video-without-ffmpeg and audio-boundary behavior when touching Audio.
 - Keep diplomatic and normalized OCR prompts methodologically distinct.
-
