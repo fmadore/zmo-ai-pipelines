@@ -1,205 +1,155 @@
 # ZMO AI Pipelines
 
-Three Google Colab notebooks that use Google's Gemini to transcribe recordings, read text
-off scans, and summarise documents. Built for researchers, not programmers — everything
-runs in a browser tab, and there is nothing to install.
+Reproducible Google Colab workflows for research transcription, OCR/HTR, and
+source-grounded summaries with the Gemini API.
 
-| Notebook | What it does | Open |
-|---|---|---|
-| **Audio & video transcription** | Interviews, focus groups, lectures, meetings → text | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio_Transcription_Colab.ipynb) |
-| **OCR / HTR** | Scanned PDFs and photographs → text, printed or handwritten | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR_HTR_Colab.ipynb) |
-| **Summaries & keywords** | Long texts or whole spreadsheets → summaries and keywords | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary_Colab.ipynb) |
+The notebooks are designed for researchers who need usable outputs without
+writing Python, while retaining enough provenance to audit how each result was
+produced. AI output is not ground truth: validate a representative sample before
+using a pipeline at scale or citing its results.
 
----
+## Important privacy requirement
 
-## ⚠️ Read this before uploading research material
+These notebooks target institutional use in Germany/EEA. Use a billing-enabled
+Google Cloud project and obtain any ethics, consent, confidentiality, copyright,
+and DPO approval required for the material. The current
+[Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms) distinguish
+EEA/Switzerland/UK use and restrict how API clients may be made available there.
 
-On the **free** Gemini tier, [Google's API terms](https://ai.google.dev/gemini-api/terms)
-state that Google uses what you send to improve its products, and that *"human reviewers
-may read, annotate, and process your API input and output."*
+Outside those regions, Google states that unpaid-service inputs and outputs may
+be used to improve products and reviewed by humans. Do not submit sensitive,
+confidential, or personal data through an unpaid service. Billing is not a
+substitute for institutional authorization.
 
-On the **paid** tier — billing enabled on your Google Cloud project — Google does not use
-your prompts or responses to improve its products.
+## Notebooks
 
-If your recordings, documents or transcripts are covered by an ethics approval, a consent
-form, an archive agreement or a data-protection undertaking, check whether free-tier
-handling is compatible with it **before** you upload anything. For interview data the
-usual answer is to enable billing first.
+| Notebook | Purpose | Important behavior |
+| --- | --- | --- |
+| `Audio_Transcription_Colab.ipynb` | Audio/video transcription, translation, interviews, minutes | Extracts mono audio from video; overlaps segment boundaries; absolute timestamps; refuses to disguise video bytes as audio |
+| `OCR_HTR_Colab.ipynb` | Printed OCR and handwritten-text recognition | Separate diplomatic and normalized modes; high image resolution and medium PDF resolution; bounded page concurrency |
+| `Summary_Colab.ipynb` | Summaries and 5–10 validated keywords from text or `.xlsx` | Preserves worksheets/formulas/styles; atomic resumable checkpoints; synchronous and 50%-cost asynchronous Batch paths |
 
----
+Every completed result is accompanied by a `.provenance.json` sidecar containing
+the source SHA-256, fixed requested model, concrete model version reported by the
+response, exact prompt and prompt hash, helper hash, SDK/Python versions, settings,
+finish reasons, and token counts. Source content is not copied into provenance.
 
-## Getting started
+## Fixed model releases
 
-1. Click one of the **Open in Colab** badges above.
-2. Sign in with your Google account.
-3. Get a free API key at **[aistudio.google.com/apikey](https://aistudio.google.com/apikey)**.
-4. Store it in **Colab Secrets** (see below) — this takes a minute, once, and then every
-   notebook you open picks it up automatically.
-5. Run the steps in the notebook from top to bottom.
+The repository never uses a `-latest` alias. A reviewed repository update is
+required to change a model:
 
-### Storing your key in Colab Secrets
+| Choice | Model ID | Standard input/output price per 1M tokens* |
+| --- | --- | --- |
+| Pro | `gemini-3.1-pro-preview` | $2 / $12 up to 200k input tokens; $4 / $18 above 200k |
+| Flash | `gemini-3.6-flash` | $1.50 / $7.50 |
+| Flash Lite | `gemini-3.5-flash-lite` | $0.30 / $2.50 |
 
-1. Click the 🔑 **Secrets** icon in the left sidebar of Colab
-2. **+ Add new secret**
-3. Name: `GEMINI_API_KEY`
-4. Value: your key
-5. Switch **Notebook access** ON
+\*Prices recorded 31 July 2026; verify the current
+[Gemini pricing page](https://ai.google.dev/gemini-api/docs/pricing) before a
+large run. Batch generation is priced at 50% of standard rates and targets
+completion within 24 hours ([Batch API](https://ai.google.dev/gemini-api/docs/batch-api)).
+Pro 3.1 is a preview model, so its lifecycle risk is higher than a stable release.
 
-Do this rather than typing the key into the notebook. Colab saves widget contents into the
-notebook file when you save a copy, so a key typed into a box can travel with the file to
-Drive or GitHub. A secret never touches the notebook.
+Thinking configuration is deliberately omitted so each fixed model uses Google's
+tuned default. Reduced safety filters are off by default and can be enabled only
+through an explicit transcription/OCR checkbox; that decision is recorded in
+provenance. See Google's current
+[thinking guidance](https://ai.google.dev/gemini-api/docs/generate-content/thinking)
+and [model documentation](https://ai.google.dev/gemini-api/docs/models).
 
-> **Keys created before 2026 are being retired.** Google now rejects unrestricted
-> old-style keys, and will reject all of them from **September 2026**. Any key you create
-> today is the new kind. If a key that used to work suddenly stops, make a fresh one.
+## Quick start
 
-### Connect Google Drive (recommended)
+1. Open the required notebook in Google Colab.
+2. Run Step 1. It installs exact tested package versions and downloads
+   `zmo_common.py` from the immutable commit recorded in the notebook.
+3. Step 1 verifies the helper SHA-256 before importing any downloaded code.
+4. Add `GEMINI_API_KEY` through Colab Secrets and enable notebook access.
+5. Connect Drive for resumable work, choose source files, inspect settings, and
+   test a small representative sample.
+6. Download the current run's ZIP even when Drive is connected.
 
-Step 2.5 in each notebook. It is worth the extra click:
+Mounting Drive lets notebook code access files exposed by that mount. Review the
+notebook and its pinned helper before authorization; see the
+[Colab FAQ](https://research.google.com/colaboratory/faq.html).
 
-- Load large files straight from Drive instead of uploading them through the browser
-- **Results are written as they are produced** — each page, each segment, every few
-  spreadsheet rows. If your browser disconnects halfway through a long job, the finished
-  work is already saved.
+## Reproducibility and durability
 
----
+- Direct notebook dependencies are exact versions verified from PyPI.
+- The helper is loaded from an immutable Git commit and checked against a SHA-256.
+- Model IDs are fixed and no silent fallback is permitted.
+- Local files are written atomically or flushed after each incremental append.
+- Drive copies use same-directory temporary files, retries, and final verification.
+- A transient Drive failure does not permanently disable later synchronization.
+- Output names include the source hash and configuration identity, avoiding
+  collisions between different files with the same stem.
+- Download buttons package only files registered by the current run.
 
-## What each notebook does
+Summary workbook checkpoints bind the source hash, model, prompt hash,
+worksheet, column, and header row. A new runtime can restore a matching Drive
+checkpoint. Invalid, truncated, and failed rows have explicit `AI Status` values
+and are not treated as complete.
 
-### 🎙️ Audio & video transcription
+## Methodological choices
 
-- **Audio:** MP3, WAV, M4A, FLAC, OGG, AAC · **Video:** MP4, MOV, AVI, MKV, WEBM
-- Video files have their soundtrack extracted first, so you are never billed for the
-  picture — a 1 GB video usually becomes about 30 MB of audio.
-- Long recordings are split into segments, and **timestamps are corrected back to their
-  real position in the full recording**. A quotation marked `[00:34:12]` is at 00:34:12 of
-  your original file.
-- Each segment is shown how the previous one ended, so speaker numbering stays consistent
-  across the whole transcript.
-- Seven styles, all editable: clean-read transcription, **strict verbatim** (keeps every
-  hesitation, for conversation and discourse analysis), interview, meeting minutes,
-  lecture notes, Q&A summary, and translation into English.
+OCR/HTR offers two representations that must not be conflated:
 
-### 📜 OCR / HTR
+- **Diplomatic:** preserves line breaks, punctuation, spelling, and end-of-line
+  hyphenation.
+- **Normalized reading text:** joins visually wrapped lines and removes only
+  clear line-break hyphens while preserving wording and spelling.
 
-- **PDF, JPG, PNG, WEBP, HEIC**
-- Printed text in any language, plus specialised prompts for handwritten French, Arabic,
-  and mixed-script manuscripts
-- Reads at Gemini's highest detail setting; scan at 300 DPI or better
-- Choose a page range — try three pages before committing to a 400-page book
-- Read several pages at once for speed, and every page is saved the moment it is done
+Audio segmentation uses a configurable short overlap plus previous-transcript
+context. The overlap reduces boundary omissions, but speakers and uncertain
+readings still require human checking.
 
-### 📊 Summaries & keywords
+Summary source text is JSON-quoted inside a data delimiter and covered by a
+system instruction that treats embedded commands as source data. Structured
+output enforces shape and 5–10 keywords; semantic validation remains necessary.
+Very long text uses a conservative map/reduce path. Google's
+[prompt-design](https://ai.google.dev/gemini-api/docs/prompting-strategies) and
+[structured-output](https://ai.google.dev/gemini-api/docs/generate-content/structured-output)
+guidance informed these choices.
 
-- Plain text files, or a whole spreadsheet column
-- Adds **Summary** and **Keywords** columns; your original columns are untouched
-- Pick which column holds your text — it does not have to be called `OCR`
-- Results come back as structured JSON, so the split between summary and keywords does not
-  depend on the model formatting its reply just so
-- Saves every few rows, and **an interrupted run continues where it stopped** instead of
-  paying for the same rows twice
+Use [`scripts/evaluate_text.py`](scripts/evaluate_text.py) and the protocol in
+[`docs/evaluation.md`](docs/evaluation.md) to calculate CER/WER against locally
+held, manually checked fixtures. Sensitive fixtures should not be committed.
 
-Text files from the OCR notebook can be fed straight into the summary notebook.
+## Development
 
----
+The project targets the current Colab Python 3.12 generation. Google documents
+available images on the
+[Colab runtime versions page](https://research.google.com/colaboratory/runtime-version-faq.html).
 
-## Tips
-
-- **Try a small batch first.** Three pages, or one short recording. Check the output before
-  committing to a long job.
-- **Scan quality beats every setting.** 300 DPI or more for OCR.
-- **Choose the model to match the material.** Each notebook offers three:
-
-  | Model | Free tier? | Cost per 1M tokens (in / out) | Good for |
-  |---|---|---|---|
-  | **Balanced** — `gemini-flash-latest` *(default)* | ✅ yes | $1.50 / $7.50 | Clean printed text, clear recordings |
-  | **Cheapest** — `gemini-flash-lite-latest` | ✅ yes | $0.30 / $2.50 | Bulk summarising; clean modern print |
-  | **Best quality** — `gemini-pro-latest` | ❌ **no** | $2.00 / $12.00 | Handwriting, faded ink, several speakers, strong accents, non-Latin scripts |
-
-  *Prices as of July 2026 — check [current pricing](https://ai.google.dev/gemini-api/docs/pricing).*
-
-  **The best-quality model is not on the free tier at all.** A free API key will be
-  refused if you select it. Enable billing on your Google Cloud project first, or stay on
-  the other two.
-
-  Flash-Lite earns its place on summarising, where the job is easier and the volume is
-  higher — five times cheaper on input than Flash. Test it on twenty rows against Flash
-  before turning it loose on a whole spreadsheet. For handwriting or difficult audio it is
-  a false economy.
-- **Verbatim is a methodological choice.** The default transcription style tidies text up:
-  hesitations removed, numbers standardised. If your method needs every "um", pick *Strict
-  verbatim*.
-- **Always check the output.** These models are good and still wrong sometimes — names,
-  dates and direct quotations especially.
-
----
-
-## Troubleshooting
-
-**"No API key found"** — add the `GEMINI_API_KEY` secret as described above and switch
-*Notebook access* on, then press *Check Secrets again* in Step 2.
-
-**A key that used to work now fails** — see the note about key retirement above; create a
-new key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
-
-**"Could not download the shared helper file"** — Step 1 fetches `zmo_common.py` from this
-repository. Check your connection and run the cell again.
-
-**"hit the output limit and was CUT SHORT"** — one reply was too long. For audio, turn
-splitting on or shorten the segments. For OCR this is rare and the partial text is kept
-and flagged.
-
-**Rate limit errors** — the free tier has limits. The notebooks retry automatically with
-backoff. If they still fail: reduce *Pages at once* to 1 in the OCR notebook, wait a few
-minutes, or enable billing.
-
-**The Google Drive tab says "not connected" after I connected it** — press **Refresh** in
-that tab.
-
-**Uploads fail or stall on a big file** — browser uploads become unreliable above a few
-hundred megabytes. Put the file in Google Drive and load it from the Drive tab instead.
-
-**Only some files downloaded** — browsers block long runs of separate downloads. Use
-**Download all as ZIP**.
-
----
-
-## For maintainers
-
-`zmo_common.py` holds everything the three notebooks share: the Gemini client and retry
-policy, response handling, the API-key panel, the file picker, Drive mirroring, incremental
-saving, and the audio helpers. Each notebook downloads it in Step 1:
-
-```bash
-wget -q -O zmo_common.py https://raw.githubusercontent.com/fmadore/zmo-ai-pipelines/main/zmo_common.py
+```powershell
+C:/Users/frede/AppData/Local/Programs/Python/Python312/python.exe -m venv .venv
+.venv/Scripts/python.exe -m pip install --editable ".[dev]"
+.venv/Scripts/ruff.exe check .
+.venv/Scripts/python.exe -m pytest
 ```
 
-A fix therefore lands in all three notebooks at once. It is fetched from `main`, so
-anything pushed there reaches users immediately — including mistakes.
+CI repeats lint, helper tests, notebook JSON/Python validation, helper-call
+contract validation, pin/hash checks, workbook round-trips, MIME regressions,
+Drive retry behavior, and evaluation-metric tests. GitHub Actions are pinned to
+immutable commit SHAs.
 
-Two deliberate choices worth knowing about:
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the release sequence and
+[`docs/architecture.md`](docs/architecture.md) for API/design decisions.
 
-- **No `temperature`, `top_p` or `top_k`.** Google deprecated these sampling parameters in
-  July 2026, and the Gemini 3 guide warns that lowering temperature can cause looping or
-  degraded output — the worst possible failure for a long transcription.
-- **Model IDs are the `-latest` aliases**, never pinned version numbers. Google
-  hot-swaps them as new models ship, so the notebooks follow along without edits — as of
-  July 2026 `gemini-flash-latest` already points at Gemini 3.6 Flash, which shipped after
-  this code was written. The trade-off is that an alias can be repointed, or retired,
-  under you. So every run does one `models.get()` first and prints what the alias actually
-  resolved to; if it no longer exists, the run falls back to `gemini-flash-latest` with a
-  warning rather than dying on a bare 404.
-- **The default is Flash, not Pro.** Pro is not offered on the free tier, and the whole
-  onboarding path in this README hands people a free key. Defaulting to a model they
-  cannot use would fail them on their first run.
+## Limitations
 
----
+- Gemini output can omit, normalize, or hallucinate content.
+- A `.provenance.json` file documents a run; it does not prove output accuracy.
+- `openpyxl` preserves ordinary `.xlsx` workbook structures but may not retain
+  every vendor-specific Excel extension. Test irreplaceable workbooks on copies.
+- Formula source values rely on cached results; recalculate and save the workbook
+  in Excel or LibreOffice before upload if caches are empty.
+- Batch results must be collected promptly; remote results are retained for a
+  limited period.
+- No live Gemini call runs in CI because credentials and research data must not
+  enter the test environment.
 
-## About
+## License
 
-**ZMO AI Pipelines**, created by [Frédérick Madore](https://www.frederickmadore.com/).
-
-Part of the [Leibniz-Zentrum Moderner Orient (ZMO)](https://www.zmo.de/en) research tools.
-
-Use of these notebooks is subject to the
-[Gemini API terms](https://ai.google.dev/gemini-api/terms) and Google's usage policies.
+[MIT](LICENSE). Created by [Frédérick Madore](https://www.frederickmadore.com/)
+for the [Leibniz-Zentrum Moderner Orient (ZMO)](https://www.zmo.de/).
