@@ -1,11 +1,9 @@
 """Shared helpers for the ZMO AI Pipelines Colab notebooks.
 
-This module is downloaded by each notebook at runtime:
-
-    !wget -q -O zmo_common.py https://raw.githubusercontent.com/fmadore/zmo-ai-pipelines/main/zmo_common.py
-
-Keeping the plumbing here means a fix lands in all three notebooks at once,
-instead of being copy-pasted three times and drifting apart.
+Notebook releases download this module from an immutable Git commit and verify
+its SHA-256 digest before importing it. Keeping the plumbing here means the
+three notebooks share one tested implementation without executing mutable code
+from the repository's default branch.
 
 Notes for maintainers
 ---------------------
@@ -14,9 +12,8 @@ Notes for maintainers
   guide warns that lowering temperature "may lead to unexpected behavior,
   such as looping or degraded performance". Looping is the worst possible
   failure mode for a long transcription.
-* Model IDs are discovered at runtime rather than hardcoded, because the
-  ``-latest`` aliases get hot-swapped without notice (``gemini-pro-latest``
-  pointed at ``gemini-3-pro-preview``, which was shut down on 9 March 2026).
+* Model IDs are deliberately fixed. Research outputs must not change merely
+  because Google repointed a ``-latest`` alias between two runs.
 """
 
 from __future__ import annotations
@@ -28,13 +25,14 @@ import subprocess
 import sys
 import tempfile
 import time
+from html import escape
 from pathlib import Path
 
 from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 
-__version__ = "2026.07.29"
+__version__ = "2026.07.31"
 
 
 # --------------------------------------------------------------------------
@@ -52,30 +50,28 @@ INLINE_LIMIT_BYTES = 15 * 1024 * 1024
 #: Gemini 3 models top out at 64k output tokens.
 MAX_OUTPUT_TOKENS = 65536
 
-#: The only two models the notebooks offer. The ``-latest`` aliases are
-#: hot-swapped by Google as new releases land, so these keep pointing at the
-#: current Pro and Flash models without anyone editing this file.
-MODEL_PRO = "gemini-pro-latest"
-MODEL_FLASH = "gemini-flash-latest"
-MODEL_FLASH_LITE = "gemini-flash-lite-latest"
+#: Fixed model releases selected for the 2026-07 notebook release. Do not
+#: replace these with ``-latest`` aliases: stable research runs require the
+#: model selection to remain unchanged until a reviewed repository update.
+MODEL_PRO = "gemini-3.1-pro-preview"
+MODEL_FLASH = "gemini-3.6-flash"
+MODEL_FLASH_LITE = "gemini-3.5-flash-lite"
 
 MODEL_CHOICES = [
-    ("Balanced — the default, works on the free tier  (gemini-flash-latest)", MODEL_FLASH),
-    ("Cheapest and fastest — simple material only  (gemini-flash-lite-latest)",
+    (f"Balanced — fixed research release  ({MODEL_FLASH})", MODEL_FLASH),
+    (f"Cheapest and fastest — simple material only  ({MODEL_FLASH_LITE})",
      MODEL_FLASH_LITE),
-    ("Best quality — REQUIRES BILLING, not on the free tier  (gemini-pro-latest)",
-     MODEL_PRO),
+    (f"Best quality — PREVIEW, REQUIRES BILLING  ({MODEL_PRO})", MODEL_PRO),
 ]
 
-#: Where to land if a chosen alias turns out not to exist. Flash is the safe
-#: harbour: it is the alias Google documents by name, and unlike Pro it is
-#: available on the free tier.
-MODEL_FALLBACK = MODEL_FLASH
+#: A silent fallback would make two nominally identical research runs use
+#: different models. Callers must stop and ask the user to choose explicitly.
+MODEL_FALLBACK = None
 
-#: Archival material routinely contains violent, racist or sexual content that
-#: the default filters would refuse to transcribe. Turning the filters off is
-#: the whole point of a faithful archival transcription.
-SAFETY_SETTINGS = [
+#: Optional settings for an explicitly confirmed archival workflow. They are
+#: never enabled by default: reducing safety filters is a methodological and
+#: policy decision that must be visible to the user for each run.
+ARCHIVAL_SAFETY_SETTINGS = [
     types.SafetySetting(
         category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
         threshold=types.HarmBlockThreshold.BLOCK_NONE,
@@ -353,7 +349,9 @@ class FileSelector:
         try:
             uploaded = colab_files.upload()
         except Exception as exc:
-            self.upload_status.value = f"<span style='color:#c62828;'>❌ {exc}</span>"
+            self.upload_status.value = (
+                f"<span style='color:#c62828;'>❌ {escape(str(exc))}</span>"
+            )
             return
 
         if not uploaded:
@@ -364,7 +362,7 @@ class FileSelector:
         self.selected = []
         for filename, content in uploaded.items():
             if Path(filename).suffix.lower() in self.extensions:
-                target = self.dest_dir / filename
+                target = self.dest_dir / Path(filename).name
                 target.write_bytes(content)
                 self.selected.append(target)
                 accepted.append(target)
@@ -450,7 +448,7 @@ class FileSelector:
         path = Path(chooser.selected)
         if path.suffix.lower() not in self.extensions:
             self.drive_status.value = (
-                f"<span style='color:#c62828;'>❌ {path.suffix} is not a supported format.</span>"
+                f"<span style='color:#c62828;'>❌ {escape(path.suffix)} is not a supported format.</span>"
             )
             return
         if path in self._drive_picks:
@@ -458,7 +456,9 @@ class FileSelector:
             return
         self._drive_picks.append(path)
         self._render_picks()
-        self.drive_status.value = f"<span style='color:#2e7d32;'>✅ Added {path.name}</span>"
+        self.drive_status.value = (
+            f"<span style='color:#2e7d32;'>✅ Added {escape(path.name)}</span>"
+        )
 
     def _on_drive_clear(self, _button):
         self._drive_picks = []
@@ -487,7 +487,8 @@ class FileSelector:
             self.drive_picks_html.value = "<i>Nothing chosen yet</i>"
             return
         rows = "".join(
-            f"&nbsp;&nbsp;{self._icon_for(p)} {p.name}<br>" for p in self._drive_picks
+            f"&nbsp;&nbsp;{self._icon_for(p)} {escape(p.name)}<br>"
+            for p in self._drive_picks
         )
         self.drive_picks_html.value = f"<b>{len(self._drive_picks)} file(s) chosen:</b><br>{rows}"
 
@@ -496,7 +497,7 @@ class FileSelector:
         html = ""
         if accepted:
             rows = "".join(
-                f"&nbsp;&nbsp;&nbsp;{self._icon_for(Path(p))} {Path(p).name}<br>"
+                f"&nbsp;&nbsp;&nbsp;{self._icon_for(Path(p))} {escape(Path(p).name)}<br>"
                 for p in accepted
             )
             html += (
@@ -504,7 +505,9 @@ class FileSelector:
                 f"{len(accepted)} file(s):</span><br>{rows}"
             )
         if rejected:
-            rows = "".join(f"&nbsp;&nbsp;&nbsp;⚠️ {Path(p).name}<br>" for p in rejected)
+            rows = "".join(
+                f"&nbsp;&nbsp;&nbsp;⚠️ {escape(Path(p).name)}<br>" for p in rejected
+            )
             html += (
                 f"<span style='color:#c62828;'>❌ Skipped {len(rejected)} "
                 f"unsupported file(s):</span><br>{rows}"
@@ -521,7 +524,7 @@ class FileSelector:
 # --------------------------------------------------------------------------
 
 def privacy_notice(material: str = "your files") -> str:
-    """HTML warning about free-tier data handling.
+    """HTML warning about regional data handling and research material.
 
     This matters more than usual for this audience: research interviews often
     carry ethics-board conditions that forbid third-party human review.
@@ -530,15 +533,17 @@ def privacy_notice(material: str = "your files") -> str:
         "<div style='background:#fdecea;border-left:5px solid #c62828;"
         "padding:12px 14px;border-radius:4px;margin:8px 0;'>"
         "<b>⚠️ Before you upload sensitive research material</b><br><br>"
-        f"On the <b>free</b> Gemini tier, Google uses {material} "
-        "to improve its products, and its terms state that "
-        "<i>“human reviewers may read, annotate, and process your API input and "
-        "output.”</i><br><br>"
-        "On the <b>paid</b> tier (billing enabled on your Google Cloud project) "
-        "Google does not use your prompts or responses to improve its products.<br><br>"
-        "If your material is covered by a research-ethics approval, a consent form, "
-        "or a data-protection agreement, <b>enable billing before processing it</b> — "
-        "or check that free-tier handling is compatible with your approval. "
+        f"These notebooks are intended for institutional use in Germany/EEA. "
+        f"Before sending {escape(material)}, <b>enable billing on the Google Cloud "
+        "project and obtain any approval required by your institution or DPO</b>. "
+        "Google's current terms apply paid-service data-use conditions differently "
+        "in the EEA, Switzerland and the UK, and restrict how API clients may be "
+        "made available there.<br><br>"
+        "Outside those regions, Google states that unpaid-service inputs and outputs "
+        "may be used to improve products and reviewed by humans. Do not send "
+        "sensitive, confidential or personal data through an unpaid service.<br><br>"
+        "Research-ethics approval, consent, copyright, confidentiality and data-"
+        "protection duties still apply regardless of billing. Review the current "
         "<a href='https://ai.google.dev/gemini-api/terms' target='_blank'>Gemini API "
         "terms</a>."
         "</div>"
@@ -573,8 +578,8 @@ def friendly_api_error(exc) -> str:
         403: "Access denied. If you picked the 'Best quality' model, note that it is "
              "not available on the free tier — switch to one of the other two, or "
              "enable billing on your Google Cloud project.",
-        404: "Model not found — the alias may have been retired. Pick a different "
-             "model in the settings step and try again.",
+        404: "The fixed model release is not available on this key. Pick another "
+             "listed fixed release, or update the repository through a reviewed change.",
         429: "Rate limit hit even after retries — wait a few minutes, or reduce "
              "the number of parallel requests.",
         500: "Google server error — retry shortly.",
@@ -661,15 +666,6 @@ def collect_tokens(response, sink) -> None:
 # Generation config
 # --------------------------------------------------------------------------
 
-def default_thinking_level(model_id: str) -> str:
-    """Pick a safe thinking level for a model.
-
-    Pro models reject ``MINIMAL`` — they only accept LOW and above — so the
-    floor has to depend on the model, not on a hardcoded guess.
-    """
-    return "LOW" if "pro" in (model_id or "").lower() else "MINIMAL"
-
-
 def build_config(
     system_instruction=None,
     model_id: str = "",
@@ -678,7 +674,7 @@ def build_config(
     max_output_tokens: int = MAX_OUTPUT_TOKENS,
     response_mime_type: str = "text/plain",
     response_schema=None,
-    safety: bool = True,
+    safety: bool = False,
 ) -> types.GenerateContentConfig:
     """Build a GenerateContentConfig.
 
@@ -693,10 +689,14 @@ def build_config(
     params = {
         "max_output_tokens": max_output_tokens,
         "response_mime_type": "application/json" if response_schema else response_mime_type,
-        "thinking_config": types.ThinkingConfig(
-            thinking_level=thinking_level or default_thinking_level(model_id)
-        ),
     }
+    # Let each fixed model use Google's tuned default unless an expert makes an
+    # explicit, recorded choice. The previous code downgraded Pro to LOW and
+    # Flash to MINIMAL despite presenting them as quality-oriented options.
+    if thinking_level is not None:
+        params["thinking_config"] = types.ThinkingConfig(
+            thinking_level=thinking_level
+        )
     if response_schema is not None:
         params["response_schema"] = response_schema
     if system_instruction:
@@ -704,7 +704,7 @@ def build_config(
     if media_resolution is not None:
         params["media_resolution"] = media_resolution
     if safety:
-        params["safety_settings"] = SAFETY_SETTINGS
+        params["safety_settings"] = ARCHIVAL_SAFETY_SETTINGS
     return types.GenerateContentConfig(**params)
 
 
@@ -720,17 +720,14 @@ def _describe_resolved(model_id, model) -> str:
 
 
 def resolve_model(client, model_id: str, fallback: str = None):
-    """Check that an alias resolves, and report what it points at.
+    """Check that a fixed model ID is available and report its metadata.
 
     Returns ``(model_to_use, message)``, where ``model_to_use`` is ``None`` if
     nothing usable was found. Callers should use the returned id rather than
     the one they asked for.
 
-    Aliases are hot-swapped by Google, which is exactly why the notebooks use
-    them — but it also means a run can fail with a bare 404 that a
-    non-specialist has no way to interpret. One cheap lookup before a long job
-    turns that into a sentence they can act on, and ``fallback`` lets the run
-    proceed on a model that does exist instead of dead-ending.
+    Reproducible mode never silently falls back. ``fallback`` remains available
+    for callers outside these notebooks, but must be supplied explicitly.
     """
     try:
         return (model_id, _describe_resolved(model_id, client.models.get(model=model_id)))
@@ -865,13 +862,26 @@ def send_media(
                 pass
 
 
-def send_text(client, model: str, config, prompt: str, label: str = "", verbose: bool = True,
-              indent: str = "   "):
-    """Text-only generation. Returns ``(text, status)``."""
+def send_text(
+    client,
+    model: str,
+    config,
+    prompt: str,
+    label: str = "",
+    verbose: bool = True,
+    indent: str = "   ",
+    usage_sink: list = None,
+):
+    """Text-only generation. Returns ``(text, status)``.
+
+    ``usage_sink`` intentionally matches :func:`send_media`, so notebook code
+    can account for text and media calls through one stable contract.
+    """
     try:
         response = client.models.generate_content(
             model=model, contents=prompt, config=config
         )
+        collect_tokens(response, usage_sink)
         if verbose:
             log_tokens(response, label, indent=indent)
         return extract_text(response)
@@ -891,8 +901,21 @@ class DriveHelper:
     BASE_PATH = "/content/drive/My Drive"
 
     def __init__(self, default_folder: str):
+        self._folder_name = ""
         self.folder_name = default_folder
         self.mounted = False
+
+    @property
+    def folder_name(self) -> str:
+        return self._folder_name
+
+    @folder_name.setter
+    def folder_name(self, value: str) -> None:
+        value = (value or "").strip()
+        candidate = Path(value)
+        if not value or candidate.is_absolute() or ".." in candidate.parts:
+            raise ValueError("Drive folder must be a relative path without '..'.")
+        self._folder_name = value
 
     def mount(self) -> bool:
         if self.mounted:
@@ -910,7 +933,13 @@ class DriveHelper:
         """Return the output folder as a Path, creating it if needed."""
         if not self.mounted:
             return None
-        path = Path(self.BASE_PATH) / self.folder_name
+        base = Path(self.BASE_PATH).resolve(strict=False)
+        path = (base / self.folder_name).resolve(strict=False)
+        try:
+            path.relative_to(base)
+        except ValueError:
+            print("⚠️ Drive folder must stay inside My Drive.")
+            return None
         try:
             path.mkdir(parents=True, exist_ok=True)
             return path
