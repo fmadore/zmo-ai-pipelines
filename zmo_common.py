@@ -30,7 +30,8 @@ import tempfile
 import time
 from datetime import datetime, timezone
 from html import escape
-from importlib.metadata import PackageNotFoundError, version as distribution_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as distribution_version
 from pathlib import Path
 
 from google import genai
@@ -563,7 +564,8 @@ class FileSelector:
             return
         if path.suffix.lower() not in self.extensions:
             self.drive_status.value = (
-                f"<span style='color:#c62828;'>❌ {escape(path.suffix)} is not a supported format.</span>"
+                "<span style='color:#c62828;'>❌ "
+                f"{escape(path.suffix)} is not a supported format.</span>"
             )
             return
         if path in self._drive_picks:
@@ -1303,7 +1305,13 @@ def split_mono_mp3(
     stem = Path(source).stem
     segments = []
     step_ms = segment_ms - overlap_ms
-    for index, start in enumerate(range(0, len(audio), step_ms), start=1):
+    starts = [0]
+    # Stop once the last full-sized slice already reaches the end. A naïve
+    # ``range(0, len(audio), step_ms)`` creates a tiny, entirely redundant tail
+    # segment whenever overlap is enabled.
+    while starts[-1] + segment_ms < len(audio):
+        starts.append(starts[-1] + step_ms)
+    for index, start in enumerate(starts, start=1):
         chunk = audio[start:start + segment_ms]
         path = dest_dir / f"{stem}_segment_{index:02d}.mp3"
         chunk.export(str(path), format="mp3", bitrate="64k",
