@@ -18,6 +18,9 @@ Notes for maintainers
 
 from __future__ import annotations
 
+import hashlib
+import json
+import mimetypes
 import os
 import re
 import shutil
@@ -25,7 +28,9 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
 from html import escape
+from importlib.metadata import PackageNotFoundError, version as distribution_version
 from pathlib import Path
 
 from google import genai
@@ -67,6 +72,23 @@ MODEL_CHOICES = [
 #: A silent fallback would make two nominally identical research runs use
 #: different models. Callers must stop and ask the user to choose explicitly.
 MODEL_FALLBACK = None
+
+MEDIA_MIME_OVERRIDES = {
+    ".aac": "audio/aac",
+    ".avi": "video/x-msvideo",
+    ".flac": "audio/flac",
+    ".heic": "image/heic",
+    ".heif": "image/heif",
+    ".m4a": "audio/mp4",
+    ".mkv": "video/x-matroska",
+    ".mov": "video/quicktime",
+    ".mp3": "audio/mpeg",
+    ".mp4": "video/mp4",
+    ".ogg": "audio/ogg",
+    ".pdf": "application/pdf",
+    ".wav": "audio/wav",
+    ".webm": "video/webm",
+}
 
 #: Optional settings for an explicitly confirmed archival workflow. They are
 #: never enabled by default: reducing safety filters is a methodological and
@@ -112,6 +134,85 @@ def build_http_options() -> types.HttpOptions:
 def make_client(api_key: str) -> genai.Client:
     """Create a Gemini client with the shared retry policy applied."""
     return genai.Client(api_key=api_key, http_options=build_http_options())
+
+
+def media_mime_type(path) -> str:
+    """Return a MIME type that agrees with the file's extension."""
+    suffix = Path(path).suffix.lower()
+    return MEDIA_MIME_OVERRIDES.get(suffix) or mimetypes.guess_type(str(path))[0] or ""
+
+
+def file_sha256(path, chunk_size: int = 1024 * 1024) -> str:
+    """Hash a file without loading a large recording or PDF into memory."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def text_sha256(text: str) -> str:
+    return hashlib.sha256((text or "").encode("utf-8")).hexdigest()
+
+
+def safe_stem(path) -> str:
+    """Return a filename stem safe on Drive, Windows and Colab."""
+    stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", Path(path).stem).strip(" .")
+    return stem or "file"
+
+
+def output_name_for(source, suffix: str) -> str:
+    """Create a deterministic, collision-resistant output filename."""
+    return f"{safe_stem(source)}_{file_sha256(source)[:10]}{suffix}"
+
+
+def atomic_write_text(path, text: str, encoding: str = "utf-8") -> Path:
+    """Replace a text file atomically so interruption cannot leave half a file."""
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temp_name = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding=encoding, dir=destination.parent,
+            prefix=f".{destination.name}.", suffix=".tmp", delete=False,
+        ) as handle:
+            temp_name = handle.name
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, destination)
+        return destination
+    finally:
+        if temp_name and os.path.exists(temp_name):
+            try:
+                os.unlink(temp_name)
+            except OSError:
+                pass
+
+
+def atomic_copy(source, destination, attempts: int = 3, delay: float = 1.0) -> Path:
+    """Copy via a same-directory temporary file, retrying transient Drive I/O."""
+    source = Path(source)
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        temp_path = destination.with_name(
+            f".{destination.name}.{os.getpid()}.{attempt}.tmp"
+        )
+        try:
+            shutil.copy2(source, temp_path)
+            os.replace(temp_path, destination)
+            return destination
+        except Exception as exc:
+            last_error = exc
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+            if attempt < attempts:
+                time.sleep(delay * (2 ** (attempt - 1)))
+    raise OSError(f"Could not copy {source.name} after {attempts} attempts: {last_error}")
 
 
 # --------------------------------------------------------------------------
@@ -446,6 +547,20 @@ class FileSelector:
         if not chooser.selected:
             return
         path = Path(chooser.selected)
+        try:
+            path.resolve(strict=True).relative_to(
+                Path(DriveHelper.BASE_PATH).resolve(strict=True)
+            )
+        except (FileNotFoundError, ValueError):
+            self.drive_status.value = (
+                "<span style='color:#c62828;'>❌ Choose an existing file inside My Drive.</span>"
+            )
+            return
+        if not path.is_file():
+            self.drive_status.value = (
+                "<span style='color:#c62828;'>❌ Choose a file, not a folder.</span>"
+            )
+            return
         if path.suffix.lower() not in self.extensions:
             self.drive_status.value = (
                 f"<span style='color:#c62828;'>❌ {escape(path.suffix)} is not a supported format.</span>"
@@ -662,6 +777,84 @@ def collect_tokens(response, sink) -> None:
         sink.append(total)
 
 
+def response_metadata(response) -> dict:
+    """Extract reproducibility and cost metadata without retaining user data."""
+    usage = getattr(response, "usage_metadata", None)
+    candidate = (getattr(response, "candidates", None) or [None])[0]
+    finish = getattr(candidate, "finish_reason", None) if candidate else None
+    return {
+        "model_version": getattr(response, "model_version", None),
+        "finish_reason": str(finish).split(".")[-1] if finish else None,
+        "prompt_tokens": getattr(usage, "prompt_token_count", None) if usage else None,
+        "response_tokens": getattr(usage, "candidates_token_count", None) if usage else None,
+        "total_tokens": getattr(usage, "total_token_count", None) if usage else None,
+    }
+
+
+def collect_response_metadata(response, sink) -> None:
+    if sink is not None:
+        sink.append(response_metadata(response))
+
+
+def _installed_version(distribution: str):
+    try:
+        return distribution_version(distribution)
+    except PackageNotFoundError:
+        return None
+
+
+def build_provenance(
+    *,
+    source,
+    model_id: str,
+    prompt_text: str,
+    settings: dict = None,
+    responses: list = None,
+    helper_path=None,
+) -> dict:
+    """Build a machine-readable sidecar for a research output."""
+    source = Path(source)
+    helper_path = Path(helper_path or __file__)
+    response_rows = list(responses or [])
+    concrete_versions = sorted({
+        row.get("model_version") for row in response_rows
+        if isinstance(row, dict) and row.get("model_version")
+    })
+    return {
+        "schema_version": 1,
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "source": {
+            "name": source.name,
+            "size_bytes": source.stat().st_size,
+            "sha256": file_sha256(source),
+        },
+        "model": {
+            "requested_id": model_id,
+            "response_versions": concrete_versions,
+        },
+        "software": {
+            "zmo_common_version": __version__,
+            "zmo_common_sha256": file_sha256(helper_path),
+            "google_genai_version": _installed_version("google-genai"),
+            "python_version": sys.version.split()[0],
+        },
+        "prompt": {
+            "sha256": text_sha256(prompt_text),
+            "text": prompt_text,
+        },
+        "settings": settings or {},
+        "responses": response_rows,
+    }
+
+
+def write_provenance(path, **kwargs) -> Path:
+    """Write a provenance sidecar atomically."""
+    record = build_provenance(**kwargs)
+    return atomic_write_text(
+        path, json.dumps(record, ensure_ascii=False, indent=2) + "\n"
+    )
+
+
 # --------------------------------------------------------------------------
 # Generation config
 # --------------------------------------------------------------------------
@@ -807,6 +1000,7 @@ def send_media(
     verbose: bool = True,
     indent: str = "   ",
     usage_sink: list = None,
+    response_sink: list = None,
 ):
     """Send one media item plus a prompt, and return ``(text, status)``.
 
@@ -846,6 +1040,7 @@ def send_media(
             model=model, contents=contents, config=config
         )
         collect_tokens(response, usage_sink)
+        collect_response_metadata(response, response_sink)
         if verbose:
             log_tokens(response, label, indent=indent)
         return extract_text(response)
@@ -871,6 +1066,7 @@ def send_text(
     verbose: bool = True,
     indent: str = "   ",
     usage_sink: list = None,
+    response_sink: list = None,
 ):
     """Text-only generation. Returns ``(text, status)``.
 
@@ -882,6 +1078,7 @@ def send_text(
             model=model, contents=prompt, config=config
         )
         collect_tokens(response, usage_sink)
+        collect_response_metadata(response, response_sink)
         if verbose:
             log_tokens(response, label, indent=indent)
         return extract_text(response)
@@ -957,34 +1154,65 @@ class DriveHelper:
 # --------------------------------------------------------------------------
 
 class IncrementalWriter:
-    """Append results to disk as they arrive, mirroring to Drive each time.
+    """Append durably and mirror to Drive on a configurable cadence.
 
     Writing only at the end means a browser disconnect at page 280 of 300
-    loses everything. Every ``append`` here is immediately durable.
+    loses everything. Every ``append`` is flushed to local disk immediately;
+    Drive writes are batched and retried because mounted Drive is comparatively
+    slow and can fail transiently.
     """
 
-    def __init__(self, path, mirror_path=None, header: str = ""):
+    def __init__(
+        self,
+        path,
+        mirror_path=None,
+        header: str = "",
+        *,
+        sync_every: int = 1,
+        resume: bool = False,
+    ):
         self.path = Path(path)
         self.mirror_path = Path(mirror_path) if mirror_path else None
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._mirror_failed = False
-        self.path.write_text(header, encoding="utf-8")
-        self._sync()
+        self.sync_every = max(1, int(sync_every))
+        self._pending = 0
+        self.last_sync_error = None
+        self.last_sync_ok = None
+        if not resume or not self.path.exists():
+            atomic_write_text(self.path, header)
+        self.sync(force=True)
 
     def append(self, text: str) -> None:
         with open(self.path, "a", encoding="utf-8") as handle:
             handle.write(text)
-        self._sync()
+            handle.flush()
+            os.fsync(handle.fileno())
+        self._pending += 1
+        if self._pending >= self.sync_every:
+            self.sync()
 
-    def _sync(self) -> None:
-        if not self.mirror_path or self._mirror_failed:
-            return
+    def sync(self, force: bool = False) -> bool:
+        if not self.mirror_path:
+            return True
+        if not force and self._pending < self.sync_every:
+            return self.last_sync_error is None
         try:
-            self.mirror_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(self.path, self.mirror_path)
+            atomic_copy(self.path, self.mirror_path)
+            self._pending = 0
+            self.last_sync_error = None
+            self.last_sync_ok = datetime.now(timezone.utc)
+            return True
         except Exception as exc:
-            self._mirror_failed = True
-            print(f"   ⚠️ Could not mirror to Drive (continuing locally): {exc}")
+            self.last_sync_error = str(exc)
+            print(
+                "   ⚠️ Could not mirror to Drive yet; the local checkpoint is safe "
+                f"and the next checkpoint will retry: {exc}"
+            )
+            return False
+
+    def finalize(self) -> bool:
+        """Force a final verified Drive sync."""
+        return self.sync(force=True)
 
     def read(self) -> str:
         return self.path.read_text(encoding="utf-8")
@@ -1043,8 +1271,16 @@ def to_mono_mp3(source, dest_dir, bitrate: str = "64k"):
     return destination
 
 
-def split_mono_mp3(source, dest_dir, segment_minutes: int):
-    """Cut an MP3 into segments, returning ``[(offset_seconds, path), ...]``.
+def split_mono_mp3(
+    source,
+    dest_dir,
+    segment_minutes: int,
+    overlap_seconds: float = 2.0,
+):
+    """Cut an MP3 into overlapping segments.
+
+    Returns ``[(offset_seconds, path), ...]``. A short overlap prevents a word
+    or speaker turn at an arbitrary cut point from disappearing altogether.
 
     Output is always MP3 regardless of the input extension, so the MIME type
     sent to the API can never disagree with the actual bytes.
@@ -1054,6 +1290,11 @@ def split_mono_mp3(source, dest_dir, segment_minutes: int):
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
     segment_ms = int(segment_minutes) * 60 * 1000
+    overlap_ms = max(0, int(float(overlap_seconds) * 1000))
+    if segment_ms <= 0:
+        raise ValueError("segment_minutes must be positive")
+    if overlap_ms >= segment_ms:
+        raise ValueError("overlap must be shorter than a segment")
 
     audio = AudioSegment.from_file(str(source))
     if len(audio) <= segment_ms:
@@ -1061,7 +1302,8 @@ def split_mono_mp3(source, dest_dir, segment_minutes: int):
 
     stem = Path(source).stem
     segments = []
-    for index, start in enumerate(range(0, len(audio), segment_ms), start=1):
+    step_ms = segment_ms - overlap_ms
+    for index, start in enumerate(range(0, len(audio), step_ms), start=1):
         chunk = audio[start:start + segment_ms]
         path = dest_dir / f"{stem}_segment_{index:02d}.mp3"
         chunk.export(str(path), format="mp3", bitrate="64k",
@@ -1116,7 +1358,45 @@ def shift_timestamps(text: str, offset_seconds: float) -> str:
     return _BRACKET_SPAN.sub(fix_span, text)
 
 
-def continuity_hint(previous_tail: str, max_chars: int = 800) -> str:
+def chunk_text(text: str, max_chars: int = 600_000) -> list[str]:
+    """Split long text near paragraph boundaries without dropping content."""
+    text = str(text or "")
+    if max_chars <= 0:
+        raise ValueError("max_chars must be positive")
+    if len(text) <= max_chars:
+        return [text]
+
+    chunks = []
+    start = 0
+    while start < len(text):
+        hard_end = min(len(text), start + max_chars)
+        end = hard_end
+        if hard_end < len(text):
+            floor = start + max_chars // 2
+            for separator in ("\n\n", "\n", ". ", " "):
+                candidate = text.rfind(separator, floor, hard_end)
+                if candidate >= floor:
+                    end = candidate + len(separator)
+                    break
+        chunks.append(text[start:end])
+        start = end
+    return chunks
+
+
+def count_text_tokens(client, model: str, text: str):
+    """Return Gemini's token count, or ``None`` when preflight is unavailable."""
+    try:
+        result = client.models.count_tokens(model=model, contents=text)
+        return getattr(result, "total_tokens", None)
+    except Exception:
+        return None
+
+
+def continuity_hint(
+    previous_tail: str,
+    max_chars: int = 800,
+    overlap_seconds: float = 0,
+) -> str:
     """Context so speaker labels stay stable across segments.
 
     Without this, "Speaker 1" in segment 4 may be a different person from
@@ -1125,8 +1405,14 @@ def continuity_hint(previous_tail: str, max_chars: int = 800) -> str:
     if not previous_tail:
         return None
     tail = previous_tail.strip()[-max_chars:]
+    overlap_note = (
+        f"The first {overlap_seconds:g} seconds of this audio overlap the previous "
+        "segment. Use them only for continuity and do not repeat that speech. "
+        if overlap_seconds else ""
+    )
     return (
-        "For continuity, here is the end of the previous segment's transcript. "
+        overlap_note
+        + "For continuity, here is the end of the previous segment's transcript. "
         "Keep using the same speaker numbering, and do not repeat this text in "
         "your output:\n\n"
         f"{tail}"
