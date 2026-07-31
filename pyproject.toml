@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools==83.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zmo-ai-pipelines"
+version = "2026.7.31"
+description = "Reproducible Google Colab pipelines for scholarly transcription, OCR/HTR, and summarization"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = "MIT"
+authors = [{ name = "Frédérick Madore" }]
+dependencies = [
+  "audioop-lts==0.2.2; python_version >= '3.13'",
+  "google-genai==2.16.0",
+  "ipyfilechooser==0.6.0",
+  "ipywidgets==8.1.8",
+  "openpyxl==3.1.5",
+  "pydub==0.25.1",
+  "pypdf==6.14.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "nbformat==5.10.4",
+  "pytest==9.1.1",
+  "ruff==0.16.1",
+]
+
+[tool.setuptools]
+py-modules = ["zmo_common"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
