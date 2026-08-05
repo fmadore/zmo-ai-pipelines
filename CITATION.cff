@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "ZMO AI Pipelines"
+abstract: >-
+  Reproducible Google Colab workflows for research transcription, OCR/HTR, and
+  source-grounded summaries with the Gemini API. Every completed result carries a
+  provenance sidecar recording the source hash, fixed model release, exact prompt,
+  helper hash, settings, finish reasons, and token counts.
+authors:
+  - family-names: Madore
+    given-names: Frédérick
+    orcid: "https://orcid.org/0000-0003-0959-2092"
+    affiliation: "University of Bayreuth"
+version: 2026.7.31
+date-released: 2026-07-31
+license: MIT
+repository-code: "https://github.com/fmadore/zmo-ai-pipelines"
+url: "https://github.com/fmadore/zmo-ai-pipelines"
+keywords:
+  - digital humanities
+  - research software
+  - reproducibility
+  - speech to text
+  - optical character recognition
+  - handwritten text recognition
+  - text summarization
+  - Google Gemini
+  - Google Colab
+  - provenance

@@ -1,5 +1,9 @@
 # ZMO AI Pipelines
 
+[![Tests](https://github.com/fmadore/zmo-ai-pipelines/actions/workflows/tests.yml/badge.svg)](https://github.com/fmadore/zmo-ai-pipelines/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](pyproject.toml)
+
 Reproducible Google Colab workflows for research transcription, OCR/HTR, and
 source-grounded summaries with the Gemini API.
 
@@ -28,6 +32,11 @@ substitute for institutional authorization.
 | `Audio_Transcription_Colab.ipynb` | Audio/video transcription, translation, interviews, minutes | Extracts mono audio from video; overlaps segment boundaries; absolute timestamps; refuses to disguise video bytes as audio |
 | `OCR_HTR_Colab.ipynb` | Printed OCR and handwritten-text recognition | Separate diplomatic and normalized modes; high image resolution and medium PDF resolution; bounded page concurrency |
 | `Summary_Colab.ipynb` | Summaries and 5–10 validated keywords from text or `.xlsx` | Preserves worksheets/formulas/styles; atomic resumable checkpoints; synchronous and 50%-cost asynchronous Batch paths |
+
+Open in Colab:
+[Audio Transcription](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio_Transcription_Colab.ipynb)
+· [OCR/HTR](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR_HTR_Colab.ipynb)
+· [Summary](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary_Colab.ipynb)
 
 Every completed result is accompanied by a `.provenance.json` sidecar containing
 the source SHA-256, fixed requested model, concrete model version reported by the
@@ -152,6 +161,18 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the release sequence and
   limited period.
 - No live Gemini call runs in CI because credentials and research data must not
   enter the test environment.
+
+## Citation
+
+If a pipeline contributed to published work, cite the software as well as the
+sources. Machine-readable metadata is in [`CITATION.cff`](CITATION.cff), which
+GitHub renders under **Cite this repository** in the sidebar.
+
+> Madore, F. (2026). *ZMO AI Pipelines* (version 2026.7.31) [Computer software].
+> https://github.com/fmadore/zmo-ai-pipelines
+
+State the pipeline, the fixed model ID, and the run date in your methods
+section; the `.provenance.json` sidecar records the exact values.
 
 ## License
 
