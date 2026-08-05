@@ -1,0 +1,19 @@
+name: Question or suggestion
+description: Ask about intended use, or propose a change to a pipeline.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        **Before posting:** remove API keys, personal data, confidential research
+        material, and unredacted notebook output.
+
+  - type: textarea
+    id: body
+    attributes:
+      label: Question or suggestion
+      description: >-
+        For methodological questions, say what material you are working with
+        (format, language, condition) and what the output needs to support.
+    validations:
+      required: true

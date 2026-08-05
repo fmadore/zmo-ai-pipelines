@@ -1,0 +1,52 @@
+name: Bug report
+description: A notebook step fails, or produces an obviously wrong result.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        **Before posting:** remove API keys, personal data, confidential research
+        material, and unredacted notebook output. Describe the source file
+        (format, length, language) rather than attaching it.
+
+  - type: dropdown
+    id: notebook
+    attributes:
+      label: Notebook
+      options:
+        - Audio_Transcription_Colab.ipynb
+        - OCR_HTR_Colab.ipynb
+        - Summary_Colab.ipynb
+    validations:
+      required: true
+
+  - type: input
+    id: step
+    attributes:
+      label: Step and model
+      description: Which numbered step failed, and which model was selected.
+      placeholder: "Step 4, Flash (gemini-3.6-flash)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What happened, and what you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Error output
+      description: Paste the redacted traceback or error message.
+      render: python
+
+  - type: input
+    id: provenance
+    attributes:
+      label: Helper commit
+      description: >-
+        The `HELPER_COMMIT` value from Step 1, or the `helper_sha256` field of a
+        `.provenance.json` sidecar. Do not paste the whole sidecar.

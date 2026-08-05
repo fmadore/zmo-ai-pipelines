@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Workflow actions are pinned to immutable commit SHAs; Dependabot rewrites the
+  # SHA and keeps the human-readable version comment in sync.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "build"
+
+  # Proposes pyproject.toml bumps only. The matching notebook `%pip` cell and
+  # requirements-dev.lock must still be updated by hand before merging; see
+  # CONTRIBUTING.md.
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "build"
+    open-pull-requests-limit: 5
