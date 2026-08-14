@@ -2,7 +2,7 @@
 
 ## Fixed model releases
 
-Research runs use `gemini-3.1-pro-preview`, `gemini-3.6-flash`, or
+Research runs use `gemini-3.1-pro-preview`, `gemini-3.7-flash`, or
 `gemini-3.5-flash-lite`. Moving `-latest` aliases are prohibited. There is no
 silent model fallback: an unavailable release stops at preflight so the user can
 make and record a deliberate choice.

@@ -22,13 +22,13 @@ def fake_response(text="result", total_tokens=12):
         candidates=[candidate],
         prompt_feedback=None,
         usage_metadata=usage,
-        model_version="gemini-3.6-flash-202607",
+        model_version="gemini-3.7-flash-202608",
     )
 
 
 def test_fixed_model_ids_have_no_latest_aliases():
     assert zc.MODEL_PRO == "gemini-3.1-pro-preview"
-    assert zc.MODEL_FLASH == "gemini-3.6-flash"
+    assert zc.MODEL_FLASH == "gemini-3.7-flash"
     assert zc.MODEL_FLASH_LITE == "gemini-3.5-flash-lite"
     assert zc.MODEL_FALLBACK is None
     assert all(
@@ -67,7 +67,7 @@ def test_send_text_contract_collects_usage_and_response_metadata():
     assert tokens == [12]
     assert responses == [
         {
-            "model_version": "gemini-3.6-flash-202607",
+            "model_version": "gemini-3.7-flash-202608",
             "finish_reason": "STOP",
             "prompt_tokens": 7,
             "response_tokens": 5,
@@ -106,7 +106,7 @@ def test_atomic_output_and_provenance(tmp_path):
     record = json.loads(sidecar.read_text(encoding="utf-8"))
     assert record["source"]["sha256"] == zc.file_sha256(source)
     assert record["prompt"]["text"] == "prompt"
-    assert record["model"]["response_versions"] == ["gemini-3.6-flash-202607"]
+    assert record["model"]["response_versions"] == ["gemini-3.7-flash-202608"]
 
 
 def test_drive_folder_cannot_escape_mount(tmp_path, monkeypatch):

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-14
+
+- Moved the fixed Flash release from `gemini-3.6-flash` to `gemini-3.7-flash`.
+  Runs before this release remain identified by the prior model ID in their
+  `.provenance.json` sidecars. Pro 3.1 and Flash Lite 3.5 are unchanged.
+- Repinned the notebook helper commit/SHA-256 for the new helper version.
+
 ## 2026-07-31
 
 - Fixed the Summary `send_text(..., usage_sink=...)` runtime failure.

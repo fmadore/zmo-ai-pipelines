@@ -51,13 +51,15 @@ required to change a model:
 | Choice | Model ID | Standard input/output price per 1M tokens* |
 | --- | --- | --- |
 | Pro | `gemini-3.1-pro-preview` | $2 / $12 up to 200k input tokens; $4 / $18 above 200k |
-| Flash | `gemini-3.6-flash` | $1.50 / $7.50 |
+| Flash | `gemini-3.7-flash` | $1.50 / $7.50 |
 | Flash Lite | `gemini-3.5-flash-lite` | $0.30 / $2.50 |
 
-\*Prices recorded 31 July 2026; verify the current
+\*Prices recorded 14 August 2026; verify the current
 [Gemini pricing page](https://ai.google.dev/gemini-api/docs/pricing) before a
-large run. Batch generation is priced at 50% of standard rates and targets
-completion within 24 hours ([Batch API](https://ai.google.dev/gemini-api/docs/batch-api)).
+large run. Flash 3.7 bills at an introductory $0.75 / $3.75 through 31 December
+2026 and at the standard rate above from 1 January 2027. Batch
+generation is priced at 50% of standard rates and targets completion within 24
+hours ([Batch API](https://ai.google.dev/gemini-api/docs/batch-api)).
 Pro 3.1 is a preview model, so its lifecycle risk is higher than a stable release.
 
 Thinking configuration is deliberately omitted so each fixed model uses Google's

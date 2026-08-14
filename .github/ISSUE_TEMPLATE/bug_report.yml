@@ -25,7 +25,7 @@ body:
     attributes:
       label: Step and model
       description: Which numbered step failed, and which model was selected.
-      placeholder: "Step 4, Flash (gemini-3.6-flash)"
+      placeholder: "Step 4, Flash (gemini-3.7-flash)"
     validations:
       required: true
 

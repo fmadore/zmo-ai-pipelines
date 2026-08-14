@@ -38,7 +38,7 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 
-__version__ = "2026.07.31"
+__version__ = "2026.08.14"
 
 
 # --------------------------------------------------------------------------
@@ -56,11 +56,11 @@ INLINE_LIMIT_BYTES = 15 * 1024 * 1024
 #: Gemini 3 models top out at 64k output tokens.
 MAX_OUTPUT_TOKENS = 65536
 
-#: Fixed model releases selected for the 2026-07 notebook release. Do not
+#: Fixed model releases selected for the 2026-08 notebook release. Do not
 #: replace these with ``-latest`` aliases: stable research runs require the
 #: model selection to remain unchanged until a reviewed repository update.
 MODEL_PRO = "gemini-3.1-pro-preview"
-MODEL_FLASH = "gemini-3.6-flash"
+MODEL_FLASH = "gemini-3.7-flash"
 MODEL_FLASH_LITE = "gemini-3.5-flash-lite"
 
 MODEL_CHOICES = [
