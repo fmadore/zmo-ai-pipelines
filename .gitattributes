@@ -1,0 +1,8 @@
+# The notebooks pin zmo_common.py by SHA-256 and download it from
+# raw.githubusercontent.com, which serves the stored LF bytes. A CRLF checkout
+# would make the on-disk digest disagree with the digest Colab verifies, so
+# every text file stays LF in the working tree on all platforms.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
