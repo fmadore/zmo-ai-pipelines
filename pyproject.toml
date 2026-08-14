@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zmo-ai-pipelines"
-version = "2026.7.31"
+version = "2026.8.14"
 description = "Reproducible Google Colab pipelines for scholarly transcription, OCR/HTR, and summarization"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
