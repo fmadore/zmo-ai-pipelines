@@ -12,6 +12,18 @@ writing Python, while retaining enough provenance to audit how each result was
 produced. AI output is not ground truth: validate a representative sample before
 using a pipeline at scale or citing its results.
 
+## Open a tool in Google Colab
+
+Choose what you want to do and click its **Open in Colab** button. No installation
+on your computer is needed. In Colab, start at Step 1 and follow the instructions
+in order. Read the privacy requirements below before uploading research material.
+
+| What do you want to do? | Open the notebook |
+| --- | --- |
+| **Transcribe audio or video** into text | [![Open Audio Transcription in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio_Transcription_Colab.ipynb) |
+| **Read scanned or handwritten documents** (OCR/HTR) | [![Open OCR and HTR in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR_HTR_Colab.ipynb) |
+| **Summarise texts and extract keywords** | [![Open Summaries and Keywords in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary_Colab.ipynb) |
+
 ## Important privacy requirement
 
 These notebooks target institutional use in Germany/EEA. Use a billing-enabled
@@ -32,11 +44,6 @@ substitute for institutional authorization.
 | `Audio_Transcription_Colab.ipynb` | Audio/video transcription with Gemini 3.5 Transcribe | Verbatim or Smart; language hints; optional voices and word times; separate run folders |
 | `OCR_HTR_Colab.ipynb` | Printed OCR and handwritten-text recognition | Separate diplomatic and normalized modes; high image resolution and medium PDF resolution; bounded page concurrency |
 | `Summary_Colab.ipynb` | Summaries and 5–10 validated keywords from text or `.xlsx` | Preserves worksheets/formulas/styles; atomic resumable checkpoints; synchronous and 50%-cost asynchronous Batch paths |
-
-Open in Colab:
-[Audio Transcription](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Audio_Transcription_Colab.ipynb)
-· [OCR/HTR](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/OCR_HTR_Colab.ipynb)
-· [Summary](https://colab.research.google.com/github/fmadore/zmo-ai-pipelines/blob/main/Summary_Colab.ipynb)
 
 Every completed result is accompanied by a `.provenance.json` sidecar containing
 the source SHA-256, fixed requested model, concrete model version when reported by
