@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — 2026-09-08
+
+- Migrate audio to Gemini 3.5 Transcribe with Verbatim/Smart, language hints,
+  vocabulary hints, optional voice labels and word timestamps; remove generative prompts.
+- Preserve short original audio, apply documented duration limits, scope speakers to
+  segments, and save exact text, annotations and provenance in separate run folders.
+- Bundle a testable audio adapter directly into Colab; retain the immutable common helper.
+- Update google-genai to 2.22.0, verified against PyPI on 2026-09-08.
+- Clarify setup, Secrets access, billing, outputs and recovery guidance across notebooks.
+- Harden Summary Batch row reconciliation and system instructions; remove unused
+  per-document token-count requests. Preserve edited OCR prompts on setup reruns.
+- Add repository review and audio migration/evaluation guidance.
+
+
 ## 2026-08-14
 
 - Moved the fixed Flash release from `gemini-3.6-flash` to `gemini-3.7-flash`.

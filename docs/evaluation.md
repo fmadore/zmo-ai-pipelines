@@ -41,7 +41,9 @@ Benchmark at least:
 
 - Flash against Pro on difficult fixtures;
 - PDF medium resolution against high on a sample before paying the token cost;
-- audio overlap values (for example 0, 2, and 5 seconds);
+- Transcribe Verbatim with and without word times/voice labels;
+- Smart against a separately edited reference, not a raw Verbatim gold set;
+- original audio versus re-encoded audio, and words at non-overlapping segment joins;
 - diplomatic and normalized OCR against their own matching references.
 
 ## Summary evaluation
@@ -65,3 +67,8 @@ Store aggregate results, fixture hashes, date, model ID/concrete response versio
 prompt hash, helper hash, settings, and acceptance thresholds. Re-run the benchmark
 before changing a model, prompt, media resolution, segmentation, dependency, or API.
 
+
+For audio, compare the plain `transcription.txt`, excluding explicit error markers.
+Do not include `annotated.txt` labels/times in WER. Assess voice attribution and
+time offsets separately; voice IDs only apply within their segment. Do not interpret
+Smart's deliberate removal of hesitations as recognition errors against a raw transcript.

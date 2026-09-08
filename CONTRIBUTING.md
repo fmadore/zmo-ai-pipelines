@@ -50,3 +50,11 @@ prior model in release history.
 - Test a temporary workbook round-trip when touching Summary.
 - Test video-without-ffmpeg and audio-boundary behavior when touching Audio.
 - Keep diplomatic and normalized OCR prompts methodologically distinct.
+
+## Audio adapter updates
+
+Edit `zmo_transcribe.py`, then run `python scripts/bundle_transcribe.py`. The audio
+notebook embeds the module source; CI rejects a stale copy. No remote code download
+is added, and changing this adapter does not require a helper release commit.
+Test the SDK request contract and a representative consented recording before
+publishing a model/API change. Do not treat mocked tests as an accuracy benchmark.

@@ -214,3 +214,102 @@ def test_constraints_lock_covers_all_direct_dependencies():
         package = re.split(r"[=<>!~ ;\[]", requirement, maxsplit=1)[0]
         normalized = package.casefold().replace("_", "-")
         assert f"{normalized}==" in locked, f"{package} is missing from requirements-dev.lock"
+
+
+def test_batch_request_keeps_system_instructions_separate():
+    functions = extracted_functions(
+        ROOT / "Summary_Colab.ipynb", 12, {"batch_request"},
+        {"zc": SimpleNamespace(MAX_OUTPUT_TOKENS=100), "SUMMARY_SCHEMA": {}},
+    )
+    request = functions["batch_request"]("source", "rules")
+    assert request["system_instruction"]["parts"][0]["text"] == "rules"
+    assert request["contents"][0]["parts"][0]["text"] == "source"
+
+
+@pytest.mark.parametrize("keys,raises", [(["row-2"], False), (["row-9"], True),
+                                         (["row-2", "row-2"], True)])
+def test_batch_reconciliation_missing_unexpected_and_duplicate_rows(tmp_path, keys, raises):
+    output = tmp_path / "output.xlsx"
+    workbook = Workbook()
+    workbook.active.title = "Data"
+    workbook.active.append(["Text", "AI Summary", "AI Keywords", "AI Status"])
+    workbook.active.append(["source", None, None, "batch-pending"])
+    workbook.active.append(["source", None, None, "batch-pending"])
+    workbook.save(output)
+    workbook.close()
+    checkpoint = {"kind": "batch", "state": "submitted", "job_name": "job", "rows": [2, 3]}
+    saved = []
+    paths = {"output": output, "provenance": tmp_path / "provenance.json",
+             "mirror_provenance": None}
+    functions = extracted_functions(
+        ROOT / "Summary_Colab.ipynb", 12,
+        {"collect_sheet_batch", "workbook_headers", "copy_header_style", "ensure_output_columns",
+         "batch_response_text", "batch_response_metadata", "parse_summary_response"},
+        {"json": json, "load_workbook": load_workbook, "copy": copy,
+         "job_signature": lambda *args: {"worksheet": "Data", "header_row": 1},
+         "job_paths": lambda *args: paths,
+         "restore_checkpoint": lambda *args, **kwargs: checkpoint,
+         "write_checkpoint": lambda paths, record, workbook=None: (
+             saved.append(record.copy()), workbook.save(output) if workbook else None, True)[-1],
+         "zc": SimpleNamespace(write_provenance=lambda *args, **kwargs: None),
+         "FINAL_BATCH_STATES": {"JOB_STATE_SUCCEEDED"}},
+    )
+    payload = "\n".join(json.dumps({"key": key, "error": "test"}) for key in keys)
+    client = SimpleNamespace(
+        batches=SimpleNamespace(get=lambda **kwargs: SimpleNamespace(
+            state=SimpleNamespace(name="JOB_STATE_SUCCEEDED"),
+            dest=SimpleNamespace(file_name="result"))),
+        files=SimpleNamespace(
+            download=lambda **kwargs: payload.encode(), delete=lambda **kwargs: None),
+    )
+    if raises:
+        with pytest.raises(ValueError, match="Unexpected or duplicate"):
+            functions["collect_sheet_batch"](client, "model", "prompt", "source")
+        assert saved == []
+    else:
+        functions["collect_sheet_batch"](client, "model", "prompt", "source")
+        checked = load_workbook(output)
+        assert checked["Data"]["D3"].value == "incomplete:missing-batch-result"
+        checked.close()
+
+
+@pytest.mark.parametrize("fail_second", [False, True])
+def test_audio_segment_checkpoints_and_completion(tmp_path, fail_second):
+    import zmo_common as zc
+    import zmo_transcribe as zt
+
+    source = tmp_path / "source.mp3"
+    source.write_bytes(b"audio")
+    result_registry = {}
+
+    def transcribe(*args, segment, **kwargs):
+        if fail_second and segment == 2:
+            raise RuntimeError("quota")
+        return {"text": f"speech {segment}", "words": [], "metadata": {}}
+
+    fake_common = SimpleNamespace(**{
+        name: getattr(zc, name) for name in (
+            "text_sha256", "output_name_for", "atomic_write_text", "write_provenance", "format_hms")
+    })
+    fake_common.media_duration_seconds = lambda path: 3601
+    fake_common.have_ffmpeg = lambda: True
+    fake_common.split_mono_mp3 = lambda *args, **kwargs: [(0, source), (3600, source)]
+    functions = extracted_functions(
+        ROOT / "Audio_Transcription_Colab.ipynb", 12, {"transcribe_file"},
+        {"Path": Path, "json": json, "zc": fake_common,
+         "zt": SimpleNamespace(MODEL=zt.MODEL, VERSION=zt.VERSION,
+                               segment_limit=zt.segment_limit, transcribe=transcribe,
+                               error_message=zt.error_message),
+         "prepare_media": lambda path: (path, "audio/mpeg", False),
+         "drive": SimpleNamespace(mounted=False), "FOLDERS": {"temp": tmp_path},
+         "TRANSCRIBE_SOURCE": "test", "transcription_results": result_registry},
+    )
+    functions["transcribe_file"](None, source, zt.configuration(), tmp_path)
+    result = next(iter(result_registry.values()))
+    assert result["complete"] is (not fail_second)
+    text = Path(result["files"][0]).read_text(encoding="utf-8")
+    assert "speech 1\n\n" in text
+    assert ("[ERROR:" in text) is fail_second
+    provenance = json.loads(Path(result["files"][-1]).read_text(encoding="utf-8"))
+    assert provenance["settings"]["segments_attempted"] == 2
+    assert provenance["settings"]["complete"] is (not fail_second)
