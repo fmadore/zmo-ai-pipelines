@@ -1,0 +1,13 @@
+def ocr_configuration():
+    instructions = (custom_prompt_text.value if use_custom_prompt.value else
+        Path(FOLDERS['prompts'], prompt_dropdown.value).read_text(encoding='utf-8'))
+    return zmo_ocr.configuration(
+        model_dropdown.value, instructions, first_page=first_page_input.value,
+        last_page=last_page_input.value, reduced_safety=archival_safety_checkbox.value,
+        method=method_dropdown.value)
+
+session = NotebookSession(
+    'ocr', FOLDERS['results'], file_selector, key_panel, ocr_configuration,
+    lambda: drive.folder() if drive_save_enabled.value else None,
+    new_run=lambda: new_run_checkbox.value, workers=lambda: workers_slider.value)
+session.processing_panel()

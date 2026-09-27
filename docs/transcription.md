@@ -15,13 +15,14 @@ language is a hint, not translation. Google documents these combinations in the
 Each run has its own folder. Download its ZIP in Step 6, including incomplete
 results if any segment failed:
 
-- `…transcription.txt`: original response text, joined in recording order.
-- `…transcription.annotated.txt`: readable voice/time annotations when returned.
-- `…transcription.words.json`: segment status and word annotations; numeric times
-  refer to the original recording, and speaker IDs include the segment number.
-- `…transcription.provenance.json`: source hash, options, adapter hash, available
-  response metadata, and completion status. Vocabulary hints can contain names;
-  protect this file as research data.
+- `transcription.txt`: original response text joined in recording order.
+- `transcription.annotated.txt`: readable voice/time annotations when returned.
+- `transcription.srt` and `transcription.vtt`: subtitles when word times are returned.
+- `records.jsonl`: raw text, segment status, word annotations, and optional reviewed
+  corrections. Numeric times refer to the source; speaker IDs include the segment.
+- `provenance.json`: source hash, options, software hashes, available response metadata,
+  and completion status. Vocabulary hints may contain names; protect this as research data.
+- `manifest.json` and immutable object folders: verified resume state and review history.
 
 Original audio is preserved for a single request. Longer recordings are split
 without overlap and re-encoded; video is reduced to its soundtrack. Check joins
@@ -30,10 +31,13 @@ Google's documented duration limits and clearly scopes voice labels to segments.
 
 ## Recovery
 
-A completed segment is saved before the next request. Drive receives copies if
-connected. Download the ZIP even if Drive reports success. After a runtime reset,
-existing Drive copies remain available, but this version does not resume audio
-segments automatically. A new run transcribes again and may incur new charges.
+A completed segment is saved before the next request. Drive receives verified copies
+if connected. Download the recovery ZIP even if Drive reports success. After a runtime
+reset, reconnect Drive or import the ZIP, select the same original source/settings, and
+resume. Completed segments are reused without uploading or converting them again.
+A changed source, model, or configuration creates a separate run. The explicit separate-run
+option also starts fresh and may incur new charges. Only mirrored/exported progress
+survives loss of the local runtime. See [run recovery](runs.md).
 
 The Interactions request uses `store=False`; file deletion is attempted after each
 request, including failed ones. Google describes this storage control in the

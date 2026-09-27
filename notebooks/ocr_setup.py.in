@@ -1,0 +1,122 @@
+# ============================================
+# SUPPORTED FORMATS
+# ============================================
+IMAGE_MIME = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+    '.heic': 'image/heic',
+    '.heif': 'image/heif',
+}
+MIME_TYPES = {**IMAGE_MIME, '.pdf': 'application/pdf'}
+ALL_EXTENSIONS = set(MIME_TYPES)
+
+
+def document_icon(path):
+    return "📄" if Path(path).suffix.lower() == '.pdf' else "🖼️"
+
+
+# ============================================
+# FOLDERS
+# ============================================
+FOLDERS = {
+    'input': 'input_files',
+    'results': 'results',
+    'prompts': 'prompts',
+}
+for folder in FOLDERS.values():
+    os.makedirs(folder, exist_ok=True)
+
+drive = zc.DriveHelper('Colab_OCR_Results')
+
+# ============================================
+# PROMPT TEMPLATES
+# ============================================
+PROMPT_CONTENT = {
+    "ocr_diplomatic.md": """# Diplomatic OCR/HTR
+
+## Objective
+Produce a careful scholarly transcription. Never claim certainty that the image does not support.
+
+## Transcription rules
+- Preserve original spelling, capitalization, punctuation, paragraphing, and line breaks.
+- Preserve end-of-line hyphens exactly; do not join or de-hyphenate words.
+- Preserve visible abbreviations, deletions, insertions, and language switches.
+- Follow the document's reading direction and reading order.
+- Use `[HANDWRITTEN: ...]` only when handwriting must be distinguished from print.
+- Use `[UNCERTAIN: reading]` for a plausible but uncertain reading and `[ILLEGIBLE]` when unreadable.
+- Do not translate, summarize, modernize, silently correct, or invent missing text.
+
+## Output
+Return only the transcription, without commentary.
+""",
+
+    "ocr_normalized.md": """# Normalized Reading Text OCR/HTR
+
+## Objective
+Produce an accurate, readable transcription while documenting uncertainty.
+
+## Normalization rules
+- Preserve original wording, spelling, capitalization, and punctuation.
+- Join visually wrapped lines inside a paragraph.
+- Remove a line-break hyphen only when the same word clearly continues on the next line.
+- Preserve lexical/compound hyphens.
+- Normalize spacing around punctuation according to the source language.
+- Keep paragraph boundaries and reading order.
+- Use `[UNCERTAIN: reading]` and `[ILLEGIBLE]`; never guess silently.
+- Do not translate, summarize, modernize spelling, or invent missing text.
+
+## Output
+Return only the normalized reading text, without commentary.
+""",
+
+    "htr_french_diplomatic.md": """# Diplomatic French HTR
+
+Transcribe the French handwriting conservatively for scholarly use.
+- Preserve original spelling, accents, capitalization, punctuation, line breaks, spacing, and hyphenation.
+- Preserve historical forms and abbreviations; do not apply modern French spacing or spelling.
+- Represent visible deletions or insertions with concise square-bracket notes.
+- Use `[UNCERTAIN: reading]` for uncertainty and `[ILLEGIBLE]` when no reading is defensible.
+- Do not translate, normalize, summarize, or fill gaps.
+Return only the transcription.
+""",
+
+    "htr_arabic_diplomatic.md": """# Diplomatic Arabic HTR
+
+Transcribe the Arabic-script handwriting conservatively for scholarly use.
+- Read right-to-left and preserve the manuscript's reading order.
+- Preserve historical orthography, visible diacritics, punctuation, line breaks, and abbreviations.
+- Do not add diacritics that are not visible and do not normalize letter forms or spelling.
+- Use `[UNCERTAIN: reading]` for uncertainty and `[ILLEGIBLE]` when no reading is defensible.
+- Mark language/script switches concisely; do not translate, summarize, or fill gaps.
+Return only the transcription.
+""",
+
+    "htr_multilingual_diplomatic.md": """# Diplomatic Multilingual HTR
+
+Transcribe all visible scripts conservatively in their reading order.
+- Preserve original spelling, diacritics, capitalization, punctuation, line breaks, spacing, and hyphenation.
+- Preserve right-to-left, left-to-right, or vertical order as the document requires.
+- Mark a language/script switch only when it helps disambiguate the transcription.
+- Use `[UNCERTAIN: reading]` for uncertainty and `[ILLEGIBLE]` when no reading is defensible.
+- Do not translate, normalize, summarize, or invent missing text.
+Return only the transcription.
+""",
+}
+
+for filename, content in PROMPT_CONTENT.items():
+    prompt_path = Path(FOLDERS['prompts'], filename)
+    if not prompt_path.exists():
+        prompt_path.write_text(content, encoding='utf-8')
+
+print("✅ Setup complete!\n")
+zc.environment_report()
+print("\n📁 Folders created:")
+print("   ├── 📂 input_files/   your PDFs and images")
+print("   ├── 📂 results/       extracted text")
+print("   └── 📂 prompts/       editable instruction templates")
+print("\n🖼️ Images:", ", ".join(sorted(IMAGE_MIME)))
+print("📄 Documents: .pdf")
+
+display(HTML(zc.privacy_notice("the documents you upload and the text extracted from them")))

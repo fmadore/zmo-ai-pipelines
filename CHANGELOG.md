@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026.9.27
+
+- Extracted all processing into shared, tested modules with a CLI and generated Colab UIs.
+- Added content-verified run manifests, per-unit resume, recovery ZIP import/export,
+  historical attempts/reviews, verified Drive copies, and source/configuration guards.
+- Fixed staging collisions, Excel formula injection, missing formula caches, stale AI
+  statuses, strict JSON validation, incomplete OCR handling, and upload-poll cleanup.
+- Made Batch submission intent durable; block duplicate/mode-switch submissions,
+  split JSONL jobs, reconcile ambiguous creates, and defer cleanup until outputs are safe.
+- Replaced whole-recording decoding with streaming ffmpeg segmentation; summaries
+  read worksheets linearly and checkpoint bounded map/reduce work.
+- Added scope/price preflight, explicit PDF text-layer extraction, source review with
+  separate corrections, SRT/WebVTT, JSONL, and stratified offline A/B CER/WER evaluation.
+- Aligned version metadata and Python 3.12 support, refreshed exact dependency pins,
+  removed pydub/audioop, and unified notebook/CI dependency constraints.
+
+
 ## Unreleased — 2026-09-08
 
 - Migrate audio to Gemini 3.5 Transcribe with Verbatim/Smart, language hints,

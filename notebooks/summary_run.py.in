@@ -1,0 +1,15 @@
+def summary_configuration():
+    template = Path(FOLDERS['prompts'], 'summary_prompt.md').read_text(encoding='utf-8')
+    system = SUMMARY_SYSTEM_INSTRUCTION
+    if use_custom_prompt.value:
+        system += '\nResearcher instructions:\n' + custom_prompt_text.value
+    return zmo_summary.configuration(
+        model_dropdown.value, template=template, system=system,
+        worksheet=sheet_dropdown.value or '', column=column_dropdown.value or '',
+        header_row=header_row_input.value, column_policy=column_policy.value)
+
+session = NotebookSession(
+    'summary', FOLDERS['results'], file_selector, key_panel, summary_configuration,
+    lambda: drive.folder() if drive_save_enabled.value else None,
+    new_run=lambda: restart_checkbox.value, checkpoint_every=lambda: save_every_slider.value)
+session.processing_panel(batch_mode=lambda: batch_checkbox.value)
