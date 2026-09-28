@@ -38,7 +38,7 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 
-__version__ = "2026.08.14"
+__version__ = "2026.9.27"
 
 
 # --------------------------------------------------------------------------
@@ -192,28 +192,9 @@ def atomic_write_text(path, text: str, encoding: str = "utf-8") -> Path:
 
 
 def atomic_copy(source, destination, attempts: int = 3, delay: float = 1.0) -> Path:
-    """Copy via a same-directory temporary file, retrying transient Drive I/O."""
-    source = Path(source)
-    destination = Path(destination)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    last_error = None
-    for attempt in range(1, attempts + 1):
-        temp_path = destination.with_name(
-            f".{destination.name}.{os.getpid()}.{attempt}.tmp"
-        )
-        try:
-            shutil.copy2(source, temp_path)
-            os.replace(temp_path, destination)
-            return destination
-        except Exception as exc:
-            last_error = exc
-            try:
-                temp_path.unlink(missing_ok=True)
-            except OSError:
-                pass
-            if attempt < attempts:
-                time.sleep(delay * (2 ** (attempt - 1)))
-    raise OSError(f"Could not copy {source.name} after {attempts} attempts: {last_error}")
+    """Atomically copy and verify the source and destination bytes."""
+    from zmo_state import verified_copy
+    return verified_copy(source, destination, attempts=attempts, delay=delay)
 
 
 # --------------------------------------------------------------------------
@@ -464,8 +445,8 @@ class FileSelector:
         self.selected = []
         for filename, content in uploaded.items():
             if Path(filename).suffix.lower() in self.extensions:
-                target = self.dest_dir / Path(filename).name
-                target.write_bytes(content)
+                from zmo_state import stage_bytes
+                target = stage_bytes(filename, content, self.dest_dir)
                 self.selected.append(target)
                 accepted.append(target)
             else:
@@ -591,8 +572,8 @@ class FileSelector:
         copied, failed = [], []
         for source in self._drive_picks:
             try:
-                target = self.dest_dir / source.name
-                shutil.copy2(source, target)
+                from zmo_state import stage_file
+                target = stage_file(source, self.dest_dir)
                 copied.append(target)
             except Exception:
                 failed.append(source.name)
@@ -790,6 +771,7 @@ def response_metadata(response) -> dict:
         "prompt_tokens": getattr(usage, "prompt_token_count", None) if usage else None,
         "response_tokens": getattr(usage, "candidates_token_count", None) if usage else None,
         "total_tokens": getattr(usage, "total_token_count", None) if usage else None,
+        "thinking_tokens": getattr(usage, "thoughts_token_count", None) if usage else None,
     }
 
 
@@ -952,9 +934,9 @@ def resolve_model(client, model_id: str, fallback: str = None):
 # --------------------------------------------------------------------------
 
 def _wait_until_active(client, uploaded, poll_seconds: float = 2.0, timeout: float = 900.0):
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     while str(getattr(uploaded, "state", "")).split(".")[-1] == "PROCESSING":
-        if time.time() > deadline:
+        if time.monotonic() > deadline:
             raise RuntimeError("Timed out waiting for the upload to be processed.")
         time.sleep(poll_seconds)
         uploaded = client.files.get(name=uploaded.name)
@@ -966,6 +948,7 @@ def _wait_until_active(client, uploaded, poll_seconds: float = 2.0, timeout: flo
 def upload_media(client, path=None, data=None, mime_type=None, display_name="file"):
     """Upload via the Files API, waiting until the file is ACTIVE."""
     temp_path = None
+    uploaded = None
     try:
         if path is None:
             suffix = ".pdf" if mime_type == "application/pdf" else ".bin"
@@ -979,6 +962,13 @@ def upload_media(client, path=None, data=None, mime_type=None, display_name="fil
             config=types.UploadFileConfig(display_name=display_name, mime_type=mime_type),
         )
         return _wait_until_active(client, uploaded)
+    except BaseException:
+        if uploaded is not None:
+            try:
+                client.files.delete(name=uploaded.name)
+            except Exception as exc:
+                print(f"Remote upload cleanup pending for {uploaded.name}: {exc}")
+        raise
     finally:
         if temp_path:
             try:
@@ -1273,51 +1263,10 @@ def to_mono_mp3(source, dest_dir, bitrate: str = "64k"):
     return destination
 
 
-def split_mono_mp3(
-    source,
-    dest_dir,
-    segment_minutes: int,
-    overlap_seconds: float = 2.0,
-):
-    """Cut an MP3 into overlapping segments.
-
-    Returns ``[(offset_seconds, path), ...]``. A short overlap prevents a word
-    or speaker turn at an arbitrary cut point from disappearing altogether.
-
-    Output is always MP3 regardless of the input extension, so the MIME type
-    sent to the API can never disagree with the actual bytes.
-    """
-    from pydub import AudioSegment
-
-    dest_dir = Path(dest_dir)
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    segment_ms = int(segment_minutes) * 60 * 1000
-    overlap_ms = max(0, int(float(overlap_seconds) * 1000))
-    if segment_ms <= 0:
-        raise ValueError("segment_minutes must be positive")
-    if overlap_ms >= segment_ms:
-        raise ValueError("overlap must be shorter than a segment")
-
-    audio = AudioSegment.from_file(str(source))
-    if len(audio) <= segment_ms:
-        return [(0.0, Path(source))]
-
-    stem = Path(source).stem
-    segments = []
-    step_ms = segment_ms - overlap_ms
-    starts = [0]
-    # Stop once the last full-sized slice already reaches the end. A naïve
-    # ``range(0, len(audio), step_ms)`` creates a tiny, entirely redundant tail
-    # segment whenever overlap is enabled.
-    while starts[-1] + segment_ms < len(audio):
-        starts.append(starts[-1] + step_ms)
-    for index, start in enumerate(starts, start=1):
-        chunk = audio[start:start + segment_ms]
-        path = dest_dir / f"{stem}_segment_{index:02d}.mp3"
-        chunk.export(str(path), format="mp3", bitrate="64k",
-                     parameters=["-ac", "1", "-ar", "16000"])
-        segments.append((start / 1000.0, path))
-    return segments
+def split_mono_mp3(source, dest_dir, segment_minutes: int, overlap_seconds: float = 2.0):
+    """Compatibility wrapper around bounded-memory ffmpeg segmentation."""
+    from zmo_media import audio_segments
+    return list(audio_segments(source, dest_dir, segment_minutes * 60, overlap_seconds))
 
 
 def format_hms(seconds) -> str:

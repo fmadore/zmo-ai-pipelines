@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 
 import pytest
 
@@ -72,6 +70,7 @@ def test_send_text_contract_collects_usage_and_response_metadata():
             "prompt_tokens": 7,
             "response_tokens": 5,
             "total_tokens": 12,
+            "thinking_tokens": None,
         }
     ]
 
@@ -138,32 +137,6 @@ def test_incremental_writer_retries_after_transient_mirror_error(tmp_path, monke
     writer.append("recovered")
     assert writer.last_sync_error is None
     assert mirror.read_text(encoding="utf-8") == "recovered"
-
-
-def test_overlapping_audio_does_not_create_redundant_tail(tmp_path, monkeypatch):
-    class FakeAudio:
-        def __init__(self, length):
-            self.length = length
-
-        def __len__(self):
-            return self.length
-
-        def __getitem__(self, value):
-            return FakeAudio(min(self.length, value.stop) - value.start)
-
-        def export(self, path, **_kwargs):
-            Path(path).write_bytes(b"mp3")
-
-    class FakeAudioSegment:
-        @staticmethod
-        def from_file(_path):
-            return FakeAudio(150_000)
-
-    fake_pydub = ModuleType("pydub")
-    fake_pydub.AudioSegment = FakeAudioSegment
-    monkeypatch.setitem(sys.modules, "pydub", fake_pydub)
-    segments = zc.split_mono_mp3("recording.mp3", tmp_path, 1, overlap_seconds=2)
-    assert [offset for offset, _path in segments] == [0.0, 58.0, 116.0]
 
 
 def test_chunk_text_preserves_every_character():

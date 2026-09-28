@@ -4,50 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 
-
-def edit_distance(reference, hypothesis) -> int:
-    """Levenshtein distance using memory proportional to the shorter sequence."""
-    if len(reference) < len(hypothesis):
-        reference, hypothesis = hypothesis, reference
-    previous = list(range(len(hypothesis) + 1))
-    for row, reference_item in enumerate(reference, start=1):
-        current = [row]
-        for column, hypothesis_item in enumerate(hypothesis, start=1):
-            current.append(
-                min(
-                    current[-1] + 1,
-                    previous[column] + 1,
-                    previous[column - 1] + (reference_item != hypothesis_item),
-                )
-            )
-        previous = current
-    return previous[-1]
-
-
-def prepare_text(text: str, *, casefold: bool = False, collapse_whitespace: bool = False) -> str:
-    if casefold:
-        text = text.casefold()
-    if collapse_whitespace:
-        text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-def error_metrics(reference: str, hypothesis: str) -> dict:
-    reference_words = reference.split()
-    hypothesis_words = hypothesis.split()
-    character_edits = edit_distance(reference, hypothesis)
-    word_edits = edit_distance(reference_words, hypothesis_words)
-    return {
-        "reference_characters": len(reference),
-        "character_edits": character_edits,
-        "cer": character_edits / max(1, len(reference)),
-        "reference_words": len(reference_words),
-        "word_edits": word_edits,
-        "wer": word_edits / max(1, len(reference_words)),
-    }
+from zmo_evaluate import edit_distance, error_metrics, prepare_text  # noqa: F401
 
 
 def main() -> None:

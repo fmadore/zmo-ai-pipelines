@@ -7,3 +7,10 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# Local runs can contain research data
+/results/
+/transcriptions/
+/input_files/
+/media_files/
+/temp_segments/

@@ -1,0 +1,13 @@
+def audio_configuration():
+    language = (other_language.value.strip() if language_dropdown.value == 'other'
+                else language_dropdown.value)
+    return zmo_audio.configuration(
+        mode=mode_dropdown.value, languages=[language] if language else [],
+        speakers=speakers_checkbox.value, timestamps=timestamps_checkbox.value,
+        vocabulary=[] if vocabulary_text.disabled else vocabulary_text.value.splitlines())
+
+session = NotebookSession(
+    'audio', FOLDERS['transcriptions'], file_selector, key_panel, audio_configuration,
+    lambda: drive.folder() if drive_save_enabled.value else None,
+    new_run=lambda: new_run_checkbox.value)
+session.processing_panel()

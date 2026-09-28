@@ -1,89 +1,82 @@
-# Architecture decisions
+# Architecture
 
-## Fixed model releases
+## Modules and interfaces
 
-OCR and Summary use `gemini-3.1-pro-preview`, `gemini-3.7-flash`, or
-`gemini-3.5-flash-lite`; audio uses `gemini-3.5-transcribe`.
-Moving `-latest` aliases and silent model fallbacks are prohibited. OCR/Summary
-check availability at preflight; audio reports access errors from the Transcribe
-request and does not substitute a generative model.
+The notebooks are presentation and configuration layers. Both `NotebookSession` and
+`zmo-pipelines` invoke the same `zmo_summary`, `zmo_ocr`, and `zmo_audio` functions.
+`zmo_state` owns source identity, configuration, immutable records, manifests, mirror
+verification, and recovery. `zmo_exports` owns JSONL/provenance, review, and subtitles.
+`zmo_media` prepares bounded audio segments. `zmo_transcribe` is the prompt-free
+Interactions adapter. `zmo_evaluate` provides offline accuracy metrics.
 
-Model-tuned thinking defaults are retained by omitting `thinking_config` unless
-an expert explicitly supplies a value. Sampling parameters are likewise omitted.
+`zmo_common` retains the shared Colab widgets, Gemini request helpers, and compatibility
+utilities. Its old incremental writer and media wrappers remain for external callers;
+the three pipelines use the new run store and segment generator.
 
-## API choice by pipeline
+## Run identity and persistence
 
-The Interactions API became generally available in 2026 and is recommended by
-Google for new projects. OCR and Summary retain `generateContent` because the
-[Interactions API overview](https://ai.google.dev/gemini-api/docs/interactions-overview)
-documents two current gaps that matter here:
+A run signature binds source name, byte count, SHA-256/stable ID, complete configuration,
+prompts, model, engine version, and manifest schema. Source hashes are computed at run
+opening/validation, not once per row. Same-name uploads are staged in distinct directories.
+Every row/page/segment has a stable unit key. Complete units are reused only within the
+same verified run; AI Status cells in a newly supplied workbook never establish completion.
 
-- custom safety settings are unavailable;
-- the Batch API is available only with `generateContent`.
+Unit records, exports, and review revisions are content-addressed immutable files. A
+manifest references their hashes and byte counts. Each local save uses fsync plus atomic
+replacement, retaining the prior manifest. Retry histories link previous unit revisions;
+review corrections record the exact unit revision they reviewed. Original output is kept.
 
-Interactions also stores interactions by default unless `store=false` is used.
-Audio now uses Interactions with `store=False` and no custom safety setting.
-The prompt-free Transcribe adapter lives in `zmo_transcribe.py`. The bundling script
-embeds that exact source into the audio setup cell, so unpublished changes work
-without a mutable download or a fabricated helper commit. CI compares the embedded
-source with the tested module. The existing immutable `zmo_common.py` pin is unchanged.
+Mirroring copies and hashes objects first, then publishes and validates the manifest.
+It retains the prior remote generation. Failed copies remain retryable. A recovery ZIP
+contains the manifest, every referenced object and history record, and readable exports.
+Import rejects traversal, symlinks, duplicate/extra files, oversized archives, and corrupt
+bytes before publishing a run folder. Original sources and credentials are excluded.
 
-## Trust boundary
+Use one writer per run. Atomic storage does not provide distributed locking. A hard kill
+between a provider response and local persistence cannot guarantee exactly-once billing.
+The Drive export cadence bounds which locally completed units survive loss of a runtime.
 
-Each notebook installs exact dependencies, downloads `zmo_common.py` from a
-recorded commit, verifies its SHA-256, then imports it. The default branch is not
-executed. CI verifies that all three recorded hashes equal the repository helper.
+## Batch lifecycle
 
-Colab Secrets is the preferred key store. Manual key entry remains an explicitly
-warned fallback because widget state may be saved into a notebook copy.
+Persist a submission UUID before uploading; persist the upload handle before creating
+its job; persist the returned job name immediately. Each phase is mirrored. An ambiguous
+create exception leaves an unresolved intent and blocks automatic resubmission. Reconcile
+using the provider display name, attach the exact verified job, or explicitly abandon only
+after checking that no remote job exists. Row keys are validated before applying results.
 
-Drive folder paths are relative to `My Drive`, cannot contain `..`, and are
-resolved beneath the mount. Dynamic filenames/messages are HTML-escaped.
+Synchronous mode and a separate restart cannot reuse a run with unresolved Batch work.
+Terminal failures/cancellations make incomplete rows eligible for explicit retry. Job
+inputs are streamed and split at configured row/byte limits. Long rows are marked for the
+bounded synchronous map/reduce path. Export workbook, JSONL, and provenance before marking
+a job collected. Delete remote files only after a verified mirror or explicit confirmation
+that a recovery ZIP was saved; preserve failed cleanup identifiers for retry.
 
-## Output identity and provenance
+## Processing boundaries
 
-Output filenames combine a safe source stem, source-content hash, and relevant
-configuration identity. Each provenance sidecar includes:
+Summary traverses formula and cached-value worksheets with linear `iter_rows` passes.
+Missing formula caches are explicit incomplete units. Output workbooks retain other sheets,
+formulas, and normal formatting; generated values are literal strings and validated against
+Excel limits. Large summaries persist bounded map results and cap output token requests.
 
-- source name, size, and SHA-256;
-- requested fixed model and concrete response model version(s), when reported;
-- exact prompt, prompt SHA-256, and settings;
-- helper version/hash and SDK/Python versions;
-- completion status and available usage data.
+OCR keeps at most one pending request per worker and persists completions as they arrive.
+Truncation, failed requests, blank text layers, and incomplete pages remain distinguishable.
+PDF text-layer extraction requires an explicit choice after preflight samples. Provider text
+is preserved without whitespace normalization. Standalone images use high media resolution;
+PDFs use medium. All settings are included in the run identity.
 
-API keys are never written into provenance. Prompts and vocabulary hints may
-contain researcher-supplied source terms: protect sidecars accordingly.
+Audio probes with ffprobe and seeks into the original with ffmpeg, yielding one segment at
+a time. Short audio stays unchanged. Video uploads contain only extracted soundtracks.
+Segment offsets follow source time with an encoder margin; speaker IDs are segment-scoped.
+Exact transcript text, word annotations, and SRT/WebVTT exports retain those offsets.
 
-## Checkpoint ordering
+## API and trust boundaries
 
-Local text appends are flushed and `fsync`ed. Atomic files are written in the
-destination directory and promoted with `os.replace`.
+OCR/Summary retain generateContent and Summary Batch. Audio uses Interactions with
+`store=False`; uploaded files are deleted after requests, including polling failures.
+Fixed model IDs have no automatic fallback. Thinking/sampling defaults remain model defaults.
 
-For Summary, the workbook is saved first, then its local manifest. Drive receives
-the workbook before the manifest. A manifest is therefore never considered
-restorable unless its corresponding output exists and its signature matches the
-selected source/configuration. Drive failures retry and do not disable future
-sync attempts.
-
-## Batch reconciliation
-
-Summary Batch inputs use JSONL keys of the form `row-N`. The manifest stores the
-remote job, input file, exact row mapping, and configuration signature. Collection
-uses returned keys—not positional assumptions—to write results into the preserved
-worksheet. Uploaded inputs and result files are deleted after successful collection
-on a best-effort basis.
-
-## Media handling
-
-Video is never uploaded merely because soundtrack extraction failed. Audio and
-video MIME types are explicit. Short audio is sent unchanged. Long audio is split
-into mono MP3 segments without
-overlap (60 minutes, or 30 with annotations). Speaker IDs are segment-scoped;
-no cross-request identity matching is claimed. Both exact API text and structured
-word annotations are saved, with absolute numeric offsets. Every audio run gets
-a separate directory. Completed segments and provenance are saved after each request;
-audio does not yet resume across runtime resets.
-
-OCR uses high media resolution for standalone images and medium for PDFs, in line
-with the current [media-resolution guidance](https://ai.google.dev/gemini-api/docs/generate-content/media-resolution).
-
+Every notebook fetches modules from one immutable Git commit, verifies every digest before
+importing, and installs exact direct dependencies with the CI constraints. Colab Secrets is
+the preferred key source. Provenance includes source identity, prompts/options, model and
+response metadata, module hashes, and SDK/Python versions. API keys are never recorded.
+Prompts, vocabulary, transcripts, and review notes may themselves contain research data.

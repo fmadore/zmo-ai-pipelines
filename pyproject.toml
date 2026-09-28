@@ -4,31 +4,33 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zmo-ai-pipelines"
-version = "2026.8.14"
+version = "2026.9.27"
 description = "Reproducible Google Colab pipelines for scholarly transcription, OCR/HTR, and summarization"
 readme = "README.md"
-requires-python = ">=3.12,<3.15"
+requires-python = ">=3.12,<3.13"
 license = "MIT"
 authors = [{ name = "Frédérick Madore" }]
 dependencies = [
-  "audioop-lts==0.2.2; python_version >= '3.13'",
   "google-genai==2.22.0",
   "ipyfilechooser==0.6.0",
-  "ipywidgets==8.1.8",
+  "ipywidgets==8.1.9",
   "openpyxl==3.1.5",
-  "pydub==0.25.1",
-  "pypdf==6.16.0",
+  "pypdf==6.16.2",
+  "rapidfuzz==3.14.6",
 ]
+
+[project.scripts]
+zmo-pipelines = "zmo_cli:main"
 
 [project.optional-dependencies]
 dev = [
-  "nbformat==5.10.4",
+  "nbformat==5.11.1",
   "pytest==9.1.1",
   "ruff==0.16.1",
 ]
 
 [tool.setuptools]
-py-modules = ["zmo_common", "zmo_transcribe"]
+py-modules = ['zmo_audio', 'zmo_cli', 'zmo_common', 'zmo_evaluate', 'zmo_exports', 'zmo_media', 'zmo_notebook', 'zmo_ocr', 'zmo_state', 'zmo_summary', 'zmo_transcribe']
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

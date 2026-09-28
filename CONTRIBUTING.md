@@ -2,59 +2,67 @@
 
 ## Local checks
 
-Install the exact development environment and run both checks before every commit:
+Use Python 3.12 and install ffmpeg/ffprobe for media integration tests.
 
-```powershell
-.venv/Scripts/python.exe -m pip install --constraint requirements-dev.lock --editable ".[dev]"
-.venv/Scripts/ruff.exe check .
-.venv/Scripts/python.exe -m pytest
+```sh
+python -m pip install -c requirements-dev.lock -e '.[dev]'
+python scripts/build_notebooks.py
+ruff check .
+pytest
+python -m pip check
 ```
 
-Do not add API keys, research fixtures, generated transcripts, workbook outputs,
-or `.provenance.json` files containing information about real sources.
+Never commit API keys, actual research fixtures, generated transcripts, or provenance
+from real source material. Automated tests use synthetic input and mocked provider APIs.
+A passing test suite does not establish transcription accuracy or provider availability.
+
+## Source layout
+
+Edit pipeline behavior in `zmo_summary.py`, `zmo_ocr.py`, or `zmo_audio.py`.
+Shared state, media, exports, CLI, evaluation, and notebook widgets have separate modules.
+Edit notebook narrative/settings in `notebooks/*.template.json`, setup in `*_setup.py.in`,
+and configuration wiring in `*_run.py.in`. Processing and download cells are generated;
+changes to generated root notebooks will be overwritten. `scripts/bundle_transcribe.py`
+is a compatibility alias for the complete builder.
 
 ## Dependency updates
 
-Training data and cached examples are not version sources. Verify every proposed
-pin against the upstream registry, update `pyproject.toml` and the relevant `%pip`
-cell together, resolve `requirements-dev.lock` from a clean Python 3.12 environment,
-rebuild using that constraint, and run the full suite. Record behavioral changes
-in `CHANGELOG.md`.
+Verify new versions against the upstream registry. Update `pyproject.toml`, then:
 
-## Helper/notebook release sequence
+```sh
+uv pip compile pyproject.toml --extra dev --python-version 3.12 -o requirements-dev.lock
+python -m pip install -c requirements-dev.lock -e '.[dev]'
+python scripts/build_notebooks.py
+ruff check .
+pytest
+python -m pip check
+```
 
-Notebook helper integrity is intentionally a two-commit release operation:
+The generator embeds the same constraints and direct requirements in each notebook.
+Review transitive changes and update `CHANGELOG.md`. The lock targets Linux/Python 3.12;
+other runtimes are not claimed as tested. Setuptools is separately pinned by build-system.
 
-1. Modify and test `zmo_common.py`.
-2. Commit the helper so it has an immutable Git object.
-3. Calculate that committed file's SHA-256.
-4. Update `HELPER_COMMIT` and `HELPER_SHA256` in all three notebooks.
-5. Run the full suite. `test_notebook_verifies_current_helper_bytes` must pass.
-6. Commit the notebook pins.
+## Immutable module releases
 
-Never point a notebook at `main`, a branch, or a mutable release asset. Never
-change the helper after calculating the digest without repeating the sequence.
+All downloaded Python modules require a two-commit release:
 
-## Model updates
+1. Edit modules, templates, docs, and tests. Regenerate notebooks and run all checks.
+2. Commit the implementation modules so their exact bytes have a real Git commit.
+3. Run `python scripts/build_notebooks.py --commit FULL_IMPLEMENTATION_COMMIT`.
+4. Run lint, tests, `python scripts/build_notebooks.py --check`, and verify the
+   pinned commit contains every module with the digest recorded in notebook setup.
+5. Commit the generated notebook pins and `notebooks/release.json`.
+6. Push both commits together. The branch head must contain the complete release.
 
-Check the official model documentation and lifecycle notices. Add only a concrete
-model ID, never a `-latest` alias. Re-run the local gold-set evaluation described
-in `docs/evaluation.md`, update pricing/lifecycle documentation, and retain the
-prior model in release history.
+Never use a mutable branch or fabricate a commit. Any subsequent module edit requires
+another implementation commit and regenerated pins. The downloaded modules are all
+verified before import, including the audio adapter; no executable source is bundled.
 
-## Notebook hygiene
+## Validation and model updates
 
-- Clear every output before committing.
-- Keep cell IDs unique.
-- Ensure all `zc.*` keyword calls match the helper signature.
-- Test a temporary workbook round-trip when touching Summary.
-- Test video-without-ffmpeg and audio-boundary behavior when touching Audio.
-- Keep diplomatic and normalized OCR prompts methodologically distinct.
-
-## Audio adapter updates
-
-Edit `zmo_transcribe.py`, then run `python scripts/bundle_transcribe.py`. The audio
-notebook embeds the module source; CI rejects a stale copy. No remote code download
-is added, and changing this adapter does not require a helper release commit.
-Test the SDK request contract and a representative consented recording before
-publishing a model/API change. Do not treat mocked tests as an accuracy benchmark.
+Use concrete model IDs and official lifecycle/API documentation. No silent fallback.
+Keep tests for workbook formulas/styles, partial statuses, source/config guards, upload
+cleanup, interrupted runs, Batch reconciliation, verified mirrors, and recovery archives.
+Every notebook UI cell executes offline in CI. Preserve diplomatic and normalized prompts
+as separate methodological choices. Before changing a model, prompt, or media policy,
+evaluate an approved representative corpus as described in `docs/evaluation.md`.

@@ -1,0 +1,44 @@
+# ============================================
+# SUPPORTED FORMATS
+# ============================================
+AUDIO_MIME = {
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.m4a': 'audio/mp4',
+    '.flac': 'audio/flac',
+    '.ogg': 'audio/ogg',
+    '.aac': 'audio/aac',
+}
+VIDEO_EXTENSIONS = {'.mp4', '.mov', '.avi', '.mkv', '.webm'}
+ALL_EXTENSIONS = set(AUDIO_MIME) | VIDEO_EXTENSIONS
+
+
+def media_icon(path):
+    return "🎬" if Path(path).suffix.lower() in VIDEO_EXTENSIONS else "🎵"
+
+
+# ============================================
+# FOLDERS
+# ============================================
+FOLDERS = {
+    'media': 'media_files',
+    'transcriptions': 'transcriptions',
+    'temp': 'temp_segments',
+}
+for folder in FOLDERS.values():
+    os.makedirs(folder, exist_ok=True)
+
+drive = zc.DriveHelper('Colab_Transcriptions')
+
+print("✅ Setup complete!\n")
+zc.environment_report()
+print("\n📁 Folders created:")
+print("   ├── 📂 media_files/      your audio and video files")
+print("   ├── 📂 transcriptions/   finished transcripts")
+print("   └── 📂 temp_segments/    working files (cleaned up automatically)")
+print("\n🎵 Audio:", ", ".join(sorted(AUDIO_MIME)))
+print("🎬 Video:", ", ".join(sorted(VIDEO_EXTENSIONS)))
+
+display(HTML(zc.privacy_notice("the audio you upload and the transcripts it produces")))
+
+

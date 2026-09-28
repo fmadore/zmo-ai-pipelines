@@ -26,6 +26,12 @@ jobs:
           python -m pip install --disable-pip-version-check
           --constraint requirements-dev.lock --editable ".[dev]"
 
+      - name: Check dependency consistency
+        run: python -m pip check
+
+      - name: Verify generated notebooks
+        run: python scripts/build_notebooks.py --check
+
       - name: Lint
         run: ruff check .
 

@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import ast
-import json
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -72,17 +69,6 @@ def test_request_is_prompt_free_and_upload_deleted_on_success_or_failure(failure
     assert sent[0]["model"] == zt.MODEL
     assert sent[0]["input"] == [{"type": "audio", "uri": "uri", "mime_type": "audio/mpeg"}]
     assert deleted == [{"name": "file"}]
-
-
-def test_notebook_adapter_matches_tested_module():
-    root = Path(__file__).resolve().parents[1]
-    notebook = json.loads((root / "Audio_Transcription_Colab.ipynb").read_text(encoding="utf-8"))
-    setup = "".join(notebook["cells"][2]["source"])
-    assignment = next(
-        line for line in setup.splitlines() if line.startswith("TRANSCRIBE_SOURCE = ")
-    )
-    source = ast.literal_eval(assignment.split(" = ", 1)[1])
-    assert source == (root / "zmo_transcribe.py").read_text(encoding="utf-8")
 
 
 def test_real_sdk_response_types():
