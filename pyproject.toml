@@ -26,7 +26,7 @@ zmo-pipelines = "zmo_cli:main"
 dev = [
   "nbformat==5.11.1",
   "pytest==9.1.1",
-  "ruff==0.16.1",
+  "ruff==0.16.9",
 ]
 
 [tool.setuptools]
