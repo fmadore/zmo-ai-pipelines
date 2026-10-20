@@ -72,3 +72,30 @@ For audio, compare the plain `transcription.txt`, excluding explicit error marke
 Do not include `annotated.txt` labels/times in WER. Assess voice attribution and
 time offsets separately; voice IDs only apply within their segment. Do not interpret
 Smart's deliberate removal of hesitations as recognition errors against a raw transcript.
+
+
+## Corpus evaluation and A/B comparisons
+
+The CLI uses RapidFuzz Levenshtein distance and reference-denominator CER/WER.
+Aggregate scores sum edits and reference lengths; they are micro-weighted, not an
+unweighted mean of per-document percentages. Empty references use denominator 1,
+so insertions remain visible and rates can exceed 100%. Normalization is opt-in.
+
+Create a manifest next to locally stored UTF-8 files:
+
+```json
+{"fixtures":[{"id":"page-001","reference":"reference.txt",
+ "hypotheses":{"Flash":"flash.txt","Pro":"pro.txt"},
+ "language":"fr","script":"Latin","condition":"faded","kind":"handwriting"}]}
+```
+
+```sh
+zmo-pipelines evaluate corpus.json --output metrics.json
+zmo-pipelines evaluate corpus.json --unicode-nfc --casefold --collapse-whitespace --output normalized.json
+```
+
+Reports retain fixture and manifest hashes, explicit normalization options, per-fixture
+scores, and per-variant totals by language, script, condition, and kind. Use identical
+fixture sets for A/B comparisons; separately record the generating run IDs and prompts.
+The evaluator is entirely offline. It does not make paid calls, infer statistical
+significance, measure diarization accuracy, or replace the summary review rubric.

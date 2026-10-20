@@ -4,12 +4,29 @@
 
 - Moved the fixed Flash release from `gemini-3.7-flash` to `gemini-3.8-flash`.
   Google now routes `gemini-3.7-flash` requests to 3.8 Flash, so the old ID no
-  longer selects a fixed model. Pricing is unchanged. Runs before this release
-  remain identified by their recorded response model in `.provenance.json`.
+  longer selects a fixed model. Pricing is unchanged. Earlier runs remain
+  identified by the model recorded in their manifests and provenance.
   Pro 3.1, Flash Lite 3.5 and Transcribe 3.5 are unchanged.
-- Update google-genai to 2.31.0, pypdf to 6.21.1 and ruff to 0.17.1, verified
-  against PyPI on 2026-10-20; re-resolved `requirements-dev.lock` on Python 3.12.
-- Repinned the notebook helper commit/SHA-256 for the new helper version.
+- Updated google-genai to 2.31.0, pypdf to 6.21.1 (fixes the open high-severity
+  pypdf parsing advisories) and ruff to 0.17.1, verified against PyPI on 2026-10-20.
+- Repinned the notebook module release.
+
+## 2026.9.27
+
+- Extracted all processing into shared, tested modules with a CLI and generated Colab UIs.
+- Added content-verified run manifests, per-unit resume, recovery ZIP import/export,
+  historical attempts/reviews, verified Drive copies, and source/configuration guards.
+- Fixed staging collisions, Excel formula injection, missing formula caches, stale AI
+  statuses, strict JSON validation, incomplete OCR handling, and upload-poll cleanup.
+- Made Batch submission intent durable; block duplicate/mode-switch submissions,
+  split JSONL jobs, reconcile ambiguous creates, and defer cleanup until outputs are safe.
+- Replaced whole-recording decoding with streaming ffmpeg segmentation; summaries
+  read worksheets linearly and checkpoint bounded map/reduce work.
+- Added scope/price preflight, explicit PDF text-layer extraction, source review with
+  separate corrections, SRT/WebVTT, JSONL, and stratified offline A/B CER/WER evaluation.
+- Aligned version metadata and Python 3.12 support, refreshed exact dependency pins,
+  removed pydub/audioop, and unified notebook/CI dependency constraints.
+
 
 ## Unreleased — 2026-09-08
 

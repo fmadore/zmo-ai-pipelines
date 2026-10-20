@@ -45,7 +45,7 @@ substitute for institutional authorization.
 | `OCR_HTR_Colab.ipynb` | Printed OCR and handwritten-text recognition | Separate diplomatic and normalized modes; high image resolution and medium PDF resolution; bounded page concurrency |
 | `Summary_Colab.ipynb` | Summaries and 5–10 validated keywords from text or `.xlsx` | Preserves worksheets/formulas/styles; atomic resumable checkpoints; synchronous and 50%-cost asynchronous Batch paths |
 
-Every completed result is accompanied by a `.provenance.json` sidecar containing
+Every completed result is accompanied by a `provenance.json` record containing
 the source SHA-256, fixed requested model, concrete model version when reported by
 the response, exact prompt and prompt hash (empty for prompt-free audio), helper
 hash, SDK/Python versions, settings, completion status, and available usage data.
@@ -84,10 +84,10 @@ and [model documentation](https://ai.google.dev/gemini-api/docs/models).
 
 1. Open the required notebook in Google Colab.
 2. Run Step 1. It installs exact tested package versions and downloads
-   `zmo_common.py` from the immutable commit recorded in the notebook.
-3. Step 1 verifies the helper SHA-256 before importing any downloaded code.
+   all pipeline modules from the immutable commit recorded in the notebook.
+3. Step 1 verifies every module SHA-256 before importing any downloaded code.
 4. Add `GEMINI_API_KEY` through Colab Secrets and enable notebook access.
-5. Connect Drive to save copies (Summary also supports resuming), choose source
+5. Connect Drive to save recoverable checkpoints for all three pipelines, choose source
    files, inspect settings, and test a small representative sample.
 6. Download the current run's ZIP even when Drive is connected.
 
@@ -98,21 +98,29 @@ notebook and its pinned helper before authorization; see the
 ## Reproducibility and durability
 
 - Direct notebook dependencies are exact versions verified from PyPI.
-- The helper is loaded from an immutable Git commit and checked against a SHA-256.
-- The audio adapter is bundled inside the notebook and checked against its tested
-  source module in CI; regenerate it with `python scripts/bundle_transcribe.py`.
+- All executable modules are loaded from an immutable Git commit and verified by SHA-256.
+- Notebooks are generated from UI templates with `python scripts/build_notebooks.py`.
+  Their install constraints come from the same tested dependency lock as CI.
 - Model IDs are fixed and no silent fallback is permitted.
 - Local files are written atomically or flushed after each incremental append.
 - Drive copies use same-directory temporary files, retries, and final verification.
 - A transient Drive failure does not permanently disable later synchronization.
 - Output names include the source hash and configuration identity, avoiding
   collisions between different files with the same stem.
-- Download buttons package only files registered by the current run.
+- Recovery ZIPs package registered exports, immutable unit records, review history,
+  and the run manifest. Original source files and API keys are not included.
 
-Summary workbook checkpoints bind the source hash, model, prompt hash,
-worksheet, column, and header row. A new runtime can restore a matching Drive
-checkpoint. Invalid, truncated, and failed rows have explicit `AI Status` values
-and are not treated as complete.
+All pipelines identify runs by source bytes, model, complete prompts, settings, and
+software version. A new runtime can restore a matching Drive run or imported ZIP.
+Completed rows, pages, and audio segments are reused; incomplete units remain retryable.
+Summary marks missing formula caches and writes generated Excel cells as literal text.
+Existing AI columns require an explicit new/replace/error policy.
+
+Step 5 previews request counts, PDF text-layer samples, and optional price estimates.
+Step 6 offers a review queue with source previews, a reproducible random sample,
+and separate corrections with reviewer history. Audio word times produce SRT/WebVTT.
+`records.jsonl` provides stable source IDs and per-unit metadata for downstream research.
+See [run and recovery instructions](docs/runs.md), including older-release checkpoints.
 
 ## Methodological choices
 
@@ -142,6 +150,23 @@ Use [`scripts/evaluate_text.py`](scripts/evaluate_text.py) and the protocol in
 [`docs/evaluation.md`](docs/evaluation.md) to calculate CER/WER against locally
 held, manually checked fixtures. Sensitive fixtures should not be committed.
 
+## Command-line use
+
+Install with Python 3.12, then use the same tested pipeline modules outside Colab:
+
+```sh
+python -m pip install -c requirements-dev.lock -e .
+zmo-pipelines preflight summary source.xlsx --config summary.json
+zmo-pipelines run summary source.xlsx --config summary.json --output results --mirror drive/runs
+zmo-pipelines status results/RUN_ID
+zmo-pipelines resume results/RUN_ID --source source.xlsx
+zmo-pipelines export results/RUN_ID recovery.zip
+```
+
+Set `GEMINI_API_KEY` in the environment for network operations. No key is needed
+for preflight, status, review, exports, corpus evaluation, or PDF text-layer extraction.
+Example configurations and Batch controls are in [docs/runs.md](docs/runs.md).
+
 ## Development
 
 The project targets the current Colab Python 3.12 generation. Google documents
@@ -155,13 +180,12 @@ C:/Users/frede/AppData/Local/Programs/Python/Python312/python.exe -m venv .venv
 .venv/Scripts/python.exe -m pytest
 ```
 
-CI additionally constrains the complete tested dependency graph with
-`requirements-dev.lock`; direct notebook packages remain explicitly pinned in
-their setup cells.
+Python 3.12 is the supported and CI-tested runtime. Both CI and notebook setup
+constrain dependencies with `requirements-dev.lock`. ffmpeg and ffprobe are required
+for audio duration checks, long recordings, and video soundtrack extraction.
 
-CI repeats lint, helper tests, notebook JSON/Python validation, helper-call
-contract validation, pin/hash checks, workbook round-trips, MIME regressions,
-Drive retry behavior, and evaluation-metric tests. GitHub Actions are pinned to
+CI checks lint, generated notebook freshness, module hashes, every UI cell offline,
+workbook round-trips, recovery/Batch failure paths, media handling, and evaluation metrics. GitHub Actions are pinned to
 immutable commit SHAs.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the release sequence and
@@ -170,9 +194,12 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the release sequence and
 ## Limitations
 
 - Gemini output can omit, normalize, or hallucinate content.
-- Audio and OCR save partial results but do not automatically resume after a
-  runtime reset. Audio relaunches use a new folder and may incur new charges.
-- A `.provenance.json` file documents a run; it does not prove output accuracy.
+- Recovery requires a surviving Drive checkpoint or downloaded recovery ZIP plus
+  the unchanged original source. Work completed since the last mirror/export can
+  be lost in a runtime reset. Use one active writer per run.
+- Request estimates are planning tools, not billing caps. A process killed during
+  a remote request can leave an uncertain outcome; inspect before retrying.
+- A `provenance.json` file documents a run; it does not prove output accuracy.
 - `openpyxl` preserves ordinary `.xlsx` workbook structures but may not retain
   every vendor-specific Excel extension. Test irreplaceable workbooks on copies.
 - Formula source values rely on cached results; recalculate and save the workbook
@@ -188,11 +215,11 @@ If a pipeline contributed to published work, cite the software as well as the
 sources. Machine-readable metadata is in [`CITATION.cff`](CITATION.cff), which
 GitHub renders under **Cite this repository** in the sidebar.
 
-> Madore, F. (2026). *ZMO AI Pipelines* (version 2026.8.14) [Computer software].
+> Madore, F. (2026). *ZMO AI Pipelines* (version 2026.9.27) [Computer software].
 > https://github.com/fmadore/zmo-ai-pipelines
 
 State the pipeline, the fixed model ID, and the run date in your methods
-section; the `.provenance.json` sidecar records the exact values.
+section; the `provenance.json` sidecar records the exact values.
 
 ## License
 

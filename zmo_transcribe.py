@@ -1,7 +1,4 @@
-"""Prompt-free Gemini Transcribe adapter, bundled into the audio notebook.
-
-Regenerate the notebook copy with scripts/bundle_transcribe.py after editing.
-"""
+"""Prompt-free Gemini Transcribe adapter shared by Colab and the CLI."""
 
 from __future__ import annotations
 
@@ -9,7 +6,7 @@ import math
 import time
 
 MODEL = "gemini-3.5-transcribe"
-VERSION = "2026.09.08"
+VERSION = "2026.9.27"
 
 
 def error_message(exc):
@@ -82,6 +79,12 @@ def parse_interaction(interaction, offset=0.0, segment=1):
                     continue
                 start = seconds(field(annotation, "start_offset"))
                 end = seconds(field(annotation, "end_offset"))
+                if start is not None and end is not None and end < start:
+                    raise ValueError("The API returned a word ending before it starts.")
+                if start is not None and words:
+                    previous = words[-1]["start_seconds"]
+                    if previous is not None and start + offset < previous:
+                        raise ValueError("The API returned word times out of order.")
                 speaker = field(annotation, "speaker")
                 words.append({
                     "text": field(annotation, "text", ""),
