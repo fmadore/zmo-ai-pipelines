@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-20
+
+- Moved the fixed Flash release from `gemini-3.7-flash` to `gemini-3.8-flash`.
+  Google now routes `gemini-3.7-flash` requests to 3.8 Flash, so the old ID no
+  longer selects a fixed model. Pricing is unchanged. Runs before this release
+  remain identified by their recorded response model in `.provenance.json`.
+  Pro 3.1, Flash Lite 3.5 and Transcribe 3.5 are unchanged.
+- Update google-genai to 2.31.0, pypdf to 6.21.1 and ruff to 0.17.1, verified
+  against PyPI on 2026-10-20; re-resolved `requirements-dev.lock` on Python 3.12.
+- Repinned the notebook helper commit/SHA-256 for the new helper version.
+
 ## Unreleased — 2026-09-08
 
 - Migrate audio to Gemini 3.5 Transcribe with Verbatim/Smart, language hints,

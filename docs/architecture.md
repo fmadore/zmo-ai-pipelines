@@ -2,7 +2,7 @@
 
 ## Fixed model releases
 
-OCR and Summary use `gemini-3.1-pro-preview`, `gemini-3.7-flash`, or
+OCR and Summary use `gemini-3.1-pro-preview`, `gemini-3.8-flash`, or
 `gemini-3.5-flash-lite`; audio uses `gemini-3.5-transcribe`.
 Moving `-latest` aliases and silent model fallbacks are prohibited. OCR/Summary
 check availability at preflight; audio reports access errors from the Transcribe
