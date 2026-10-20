@@ -8,7 +8,7 @@ same configuration. Prompts, model, and content-affecting options are frozen at 
 Summary:
 
 ```json
-{"model":"gemini-3.7-flash","worksheet":"Data","column":"Text","header_row":1,"column_policy":"new"}
+{"model":"gemini-3.8-flash","worksheet":"Data","column":"Text","header_row":1,"column_policy":"new"}
 ```
 
 Use `new` to preserve existing AI columns, `replace` for explicit replacement, or `error`
@@ -21,7 +21,7 @@ For text files, omit worksheet/column. Optional `template` uses a `{text}` place
 OCR/HTR:
 
 ```json
-{"model":"gemini-3.7-flash","instructions":"Transcribe diplomatically; mark uncertainty.","first_page":1,"last_page":3,"method":"ocr"}
+{"model":"gemini-3.8-flash","instructions":"Transcribe diplomatically; mark uncertainty.","first_page":1,"last_page":3,"method":"ocr"}
 ```
 
 Use `0` for an unbounded page endpoint. `method: "text-layer"` extracts an existing PDF

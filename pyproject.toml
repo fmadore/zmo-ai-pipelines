@@ -11,11 +11,11 @@ requires-python = ">=3.12,<3.13"
 license = "MIT"
 authors = [{ name = "Frédérick Madore" }]
 dependencies = [
-  "google-genai==2.22.0",
+  "google-genai==2.31.0",
   "ipyfilechooser==0.6.0",
   "ipywidgets==8.1.9",
   "openpyxl==3.1.5",
-  "pypdf==6.16.2",
+  "pypdf==6.21.1",
   "rapidfuzz==3.14.6",
 ]
 
@@ -26,7 +26,7 @@ zmo-pipelines = "zmo_cli:main"
 dev = [
   "nbformat==5.11.1",
   "pytest==9.1.1",
-  "ruff==0.16.1",
+  "ruff==0.17.1",
 ]
 
 [tool.setuptools]

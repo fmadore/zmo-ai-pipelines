@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-20
+
+- Moved the fixed Flash release from `gemini-3.7-flash` to `gemini-3.8-flash`.
+  Google now routes `gemini-3.7-flash` requests to 3.8 Flash, so the old ID no
+  longer selects a fixed model. Pricing is unchanged. Earlier runs remain
+  identified by the model recorded in their manifests and provenance.
+  Pro 3.1, Flash Lite 3.5 and Transcribe 3.5 are unchanged.
+- Updated google-genai to 2.31.0, pypdf to 6.21.1 (fixes the open high-severity
+  pypdf parsing advisories) and ruff to 0.17.1, verified against PyPI on 2026-10-20.
+- Repinned the notebook module release.
+
 ## 2026.9.27
 
 - Extracted all processing into shared, tested modules with a CLI and generated Colab UIs.
